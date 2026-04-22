@@ -11,6 +11,7 @@
         :root {
             --bg-main: #06152f;
             --bg-accent: #0f2a56;
+            --bg-soft: #13346b;
             --card: rgba(30, 47, 80, 0.62);
             --card-strong: rgba(43, 62, 98, 0.74);
             --line: rgba(205, 223, 255, 0.18);
@@ -19,6 +20,7 @@
             --text-muted: #b2c2df;
             --chip: rgba(124, 162, 236, 0.18);
             --primary: #71e6c4;
+            --primary-dark: #4bcaa4;
             --ring: rgba(113, 230, 196, 0.24);
         }
 
@@ -47,6 +49,7 @@
 
         .hero {
             margin-bottom: 1.1rem;
+            animation: fade-up 700ms ease-out;
         }
 
         .hero h1 {
@@ -97,15 +100,18 @@
             backdrop-filter: blur(8px);
         }
 
-        .register-card,
-        .info-card {
+        .register-card {
             padding: 1.25rem;
             animation: fade-up 760ms ease-out;
+            animation-delay: 60ms;
             animation-fill-mode: both;
         }
 
         .info-card {
-            animation-delay: 120ms;
+            padding: 1.25rem;
+            animation: fade-up 800ms ease-out;
+            animation-delay: 140ms;
+            animation-fill-mode: both;
         }
 
         .register-title {
@@ -250,8 +256,9 @@
         }
 
         .metric strong {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             line-height: 1.35;
+            display: block;
         }
 
         .updates {
@@ -315,8 +322,8 @@
 <body>
 <main class="shell">
     <section class="hero">
-        <h1>Buat Akun Baru Untuk Kelola Donasi dan Campaign</h1>
-        <p>Daftarkan akun donor atau organizer untuk mulai mengelola penggalangan dana dengan alur yang aman dan terstruktur.</p>
+        <h1>Buat Akun Baru Dengan Akses Aman dan Cepat</h1>
+        <p>Daftarkan akun donor atau organizer untuk mulai mengelola penggalangan dana, memantau aktivitas, dan menjaga alur kerja tetap konsisten.</p>
         <div class="chips">
             <span class="chip">User Registration API</span>
             <span class="chip">Role Based Access</span>
@@ -327,7 +334,7 @@
     <section class="content">
         <article class="card register-card">
             <h2 class="register-title">Register Akun</h2>
-            <p class="register-subtitle">Lengkapi data di bawah untuk membuat akun baru dan mulai menggunakan platform crowdfunding.</p>
+            <p class="register-subtitle">Lengkapi data di bawah untuk membuat akun baru dan langsung menggunakan fitur platform crowdfunding.</p>
 
             <form id="registerForm">
                 @csrf
@@ -356,7 +363,7 @@
 
                 <div class="action-row">
                     <button id="submitBtn" type="submit">Buat Akun</button>
-                    <a href="/login">Sudah punya akun? Login</a>
+                    <a href="/login">Sudah punya akun? Masuk</a>
                 </div>
 
                 <p id="notice" class="notice"></p>
@@ -364,8 +371,8 @@
         </article>
 
         <aside class="card info-card">
-            <h3>Ringkasan Pendaftaran</h3>
-            <p>Pilih role sesuai kebutuhan agar akses fitur langsung sesuai alur penggunaan.</p>
+            <h3>Register Live Total</h3>
+            <p>Ringkasan alur pendaftaran untuk role donor dan organizer yang siap digunakan.</p>
 
             <div class="metric">
                 <span>Role Donor</span>
@@ -392,28 +399,28 @@ document.getElementById("registerForm").addEventListener("submit", async functio
     const notice = document.getElementById("notice");
     const submitBtn = document.getElementById("submitBtn");
     const formData = new FormData(this);
+    const payload = {
+        name: formData.get("name"),
+        email: formData.get("email"),
+        password: formData.get("password"),
+        role: formData.get("role"),
+    };
 
     notice.className = "notice";
     notice.textContent = "Memproses pendaftaran...";
     submitBtn.disabled = true;
 
     try {
-        const res = await fetch('/register', {
+        const res = await fetch('/api/register', {
             method: 'POST',
             headers: {
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
             },
-            credentials: 'same-origin',
-            body: formData
+            body: JSON.stringify(payload)
         });
 
-        let data = {};
-        const raw = await res.text();
-        try {
-            data = raw ? JSON.parse(raw) : {};
-        } catch (jsonError) {
-            data = { message: raw || 'Respons server tidak terbaca.' };
-        }
+        const data = await res.json();
 
         if (res.ok) {
             notice.className = "notice success";

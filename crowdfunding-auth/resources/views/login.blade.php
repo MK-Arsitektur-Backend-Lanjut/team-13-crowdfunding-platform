@@ -373,19 +373,23 @@ document.getElementById("loginForm").addEventListener("submit", async function (
     const notice = document.getElementById("notice");
     const submitBtn = document.getElementById("submitBtn");
     const formData = new FormData(this);
+    const payload = {
+        email: formData.get("email"),
+        password: formData.get("password"),
+    };
 
     notice.className = "notice";
     notice.textContent = "Memproses login...";
     submitBtn.disabled = true;
 
     try {
-        const res = await fetch('/login', {
+        const res = await fetch('/api/login', {
             method: 'POST',
             headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
             },
-            body: formData
+            body: JSON.stringify(payload)
         });
 
         const data = await res.json();

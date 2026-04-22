@@ -355,7 +355,7 @@ async function verifyUser() {
     status.textContent = "Mengirim request verifikasi...";
 
     try {
-        const res = await fetch('/verify/' + userId, {
+        const res = await fetch('/api/verify/' + userId, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',

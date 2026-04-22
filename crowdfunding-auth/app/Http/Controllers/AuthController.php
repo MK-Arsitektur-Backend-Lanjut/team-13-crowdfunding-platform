@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
@@ -115,5 +116,42 @@ class AuthController extends Controller
             'message' => 'Organizer verified successfully',
             'data' => $user
         ]);
+    }
+
+    /**
+     * REFRESH TOKEN
+     */
+    public function refresh(): JsonResponse
+    {
+        try {
+            $token = JWTAuth::refresh(JWTAuth::getToken());
+
+            return response()->json([
+                'message' => 'Token refreshed successfully',
+                'token' => $token,
+            ]);
+        } catch (JWTException $exception) {
+            return response()->json([
+                'error' => 'Could not refresh token'
+            ], 401);
+        }
+    }
+
+    /**
+     * LOGOUT USER
+     */
+    public function logout(): JsonResponse
+    {
+        try {
+            JWTAuth::invalidate(JWTAuth::getToken());
+
+            return response()->json([
+                'message' => 'Logout successful',
+            ]);
+        } catch (JWTException $exception) {
+            return response()->json([
+                'error' => 'Could not logout'
+            ], 401);
+        }
     }
 }
