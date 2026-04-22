@@ -87,6 +87,23 @@
             font-size: clamp(15px, 2.4vw, 18px);
         }
 
+        .module-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .module-pill {
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.09);
+            padding: 6px 10px;
+            font-size: 12px;
+            letter-spacing: 0.3px;
+            color: #e6f0fd;
+        }
+
         .grid {
             display: grid;
             gap: 18px;
@@ -305,6 +322,49 @@
             color: var(--text-soft);
         }
 
+        .campaign-insight {
+            margin-top: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .campaign-insight h3 {
+            margin: 0 0 8px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.45px;
+            color: var(--text-soft);
+        }
+
+        .campaign-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .campaign-metric {
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 9px;
+            background: rgba(0, 0, 0, 0.12);
+        }
+
+        .campaign-metric .k {
+            font-size: 11px;
+            color: var(--text-soft);
+            letter-spacing: 0.35px;
+            text-transform: uppercase;
+        }
+
+        .campaign-metric .v {
+            margin-top: 3px;
+            font-size: 20px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+        }
+
         .toast {
             position: fixed;
             right: 16px;
@@ -389,6 +449,11 @@
                 Form ini terhubung ke API Donation Processing: input donasi, dukung mode anonim,
                 dan cek akumulasi total campaign secara langsung.
             </p>
+            <div class="module-strip">
+                <span class="module-pill">Campaign Management API</span>
+                <span class="module-pill">Donation Processing API</span>
+                <span class="module-pill">Integration Branch Preview</span>
+            </div>
         </section>
 
         <section class="grid">
@@ -459,6 +524,20 @@
                 <div class="feed" id="feed">
                     <div class="feed-item">Belum ada aktivitas. Kirim donasi pertama sekarang.</div>
                 </div>
+
+                <div class="campaign-insight">
+                    <h3>Campaign Snapshot</h3>
+                    <div class="campaign-grid">
+                        <div class="campaign-metric">
+                            <div class="k">Total Campaign</div>
+                            <div class="v" id="campaignCountAll">0</div>
+                        </div>
+                        <div class="campaign-metric">
+                            <div class="k">Campaign Aktif</div>
+                            <div class="v" id="campaignCountActive">0</div>
+                        </div>
+                    </div>
+                </div>
             </aside>
         </section>
     </div>
@@ -478,6 +557,8 @@
         const campaignValue = document.getElementById("campaignValue");
         const totalValue = document.getElementById("totalValue");
         const feed = document.getElementById("feed");
+        const campaignCountAll = document.getElementById("campaignCountAll");
+        const campaignCountActive = document.getElementById("campaignCountActive");
         const toast = document.getElementById("toast");
         const idemKeyLabel = document.getElementById("idemKeyLabel");
 
@@ -544,6 +625,28 @@
             }
         }
 
+        async function refreshCampaignSnapshot() {
+            try {
+                const [allResponse, activeResponse] = await Promise.all([
+                    fetch("/api/campaigns"),
+                    fetch("/api/campaigns/status/aktif"),
+                ]);
+
+                if (!allResponse.ok || !activeResponse.ok) {
+                    throw new Error("Gagal mengambil snapshot campaign.");
+                }
+
+                const allData = await allResponse.json();
+                const activeData = await activeResponse.json();
+
+                campaignCountAll.textContent = String(Array.isArray(allData) ? allData.length : 0);
+                campaignCountActive.textContent = String(Array.isArray(activeData) ? activeData.length : 0);
+            } catch (error) {
+                campaignCountAll.textContent = "-";
+                campaignCountActive.textContent = "-";
+            }
+        }
+
         donationForm.addEventListener("submit", async (event) => {
             event.preventDefault();
 
@@ -601,6 +704,7 @@
                 );
 
                 await refreshCampaignTotal();
+                await refreshCampaignSnapshot();
 
                 currentIdemKey = createIdempotencyKey();
                 idemKeyLabel.textContent = "Idempotency key: " + currentIdemKey;
@@ -626,6 +730,7 @@
         });
 
         refreshCampaignTotal();
+        refreshCampaignSnapshot();
     </script>
 </body>
 </html>
