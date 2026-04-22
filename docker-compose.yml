@@ -1,0 +1,24 @@
+services:
+  app:
+    image: php:8.4-cli
+    container_name: crowdfunding_app
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    ports:
+      - "8000:8000"
+    command: tail -f /dev/null
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8
+    container_name: crowdfunding_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: crowdfunding
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
