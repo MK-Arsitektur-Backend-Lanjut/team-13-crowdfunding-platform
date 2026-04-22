@@ -152,7 +152,8 @@
         }
 
         .field input,
-        .field textarea {
+        .field textarea,
+        .field select {
             width: 100%;
             border: 1px solid rgba(255, 255, 255, 0.25);
             background: rgba(255, 255, 255, 0.08);
@@ -170,10 +171,15 @@
         }
 
         .field input:focus,
-        .field textarea:focus {
+        .field textarea:focus,
+        .field select:focus {
             border-color: rgba(123, 223, 242, 0.85);
             box-shadow: 0 0 0 4px rgba(123, 223, 242, 0.18);
             transform: translateY(-1px);
+        }
+
+        .campaign-mini {
+            margin-top: 6px;
         }
 
         .switch-wrap {
@@ -464,8 +470,11 @@
                 <form id="donationForm" class="fields">
                     <div class="two">
                         <div class="field">
-                            <label for="campaignId">Campaign ID</label>
-                            <input type="number" id="campaignId" name="campaign_id" min="1" value="100" required>
+                            <label for="campaignSelect">Campaign Aktif</label>
+                            <select id="campaignSelect" name="campaign_id" required>
+                                <option value="">Memuat campaign aktif...</option>
+                            </select>
+                            <p class="mini campaign-mini" id="campaignMeta">Pilih campaign aktif dari modul Campaign Management.</p>
                         </div>
                         <div class="field">
                             <label for="amount">Nominal Donasi (Rupiah)</label>
@@ -512,7 +521,7 @@
 
                 <div class="stats">
                     <div class="stat">
-                        <div class="label">Campaign Aktif</div>
+                        <div class="label">Campaign Dipilih</div>
                         <div class="value" id="campaignValue">-</div>
                     </div>
                     <div class="stat">
@@ -546,7 +555,8 @@
 
     <script>
         const donationForm = document.getElementById("donationForm");
-        const campaignIdInput = document.getElementById("campaignId");
+        const campaignSelect = document.getElementById("campaignSelect");
+        const campaignMeta = document.getElementById("campaignMeta");
         const amountInput = document.getElementById("amount");
         const donorNameInput = document.getElementById("donorName");
         const userIdInput = document.getElementById("userId");
@@ -561,6 +571,7 @@
         const campaignCountActive = document.getElementById("campaignCountActive");
         const toast = document.getElementById("toast");
         const idemKeyLabel = document.getElementById("idemKeyLabel");
+        let activeCampaigns = [];
 
         function rupiah(value) {
             return new Intl.NumberFormat("id-ID", {
@@ -602,11 +613,62 @@
             }
         }
 
+        function getSelectedCampaignId() {
+            return Number(campaignSelect.value || 0);
+        }
+
+        function getSelectedCampaign() {
+            const selectedId = getSelectedCampaignId();
+            return activeCampaigns.find((campaign) => Number(campaign.id) === selectedId) || null;
+        }
+
+        function applyActiveCampaignOptions(campaigns, preferredCampaignId = null) {
+            activeCampaigns = Array.isArray(campaigns) ? campaigns : [];
+            const previousCampaignId = getSelectedCampaignId();
+            const requestedCampaignId = preferredCampaignId ? Number(preferredCampaignId) : previousCampaignId;
+
+            campaignSelect.innerHTML = "";
+
+            if (!activeCampaigns.length) {
+                const emptyOption = document.createElement("option");
+                emptyOption.value = "";
+                emptyOption.textContent = "Belum ada campaign aktif";
+                campaignSelect.appendChild(emptyOption);
+
+                campaignSelect.disabled = true;
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = "0.55";
+                refreshBtn.disabled = true;
+                campaignMeta.textContent = "Campaign aktif belum tersedia. Buat atau aktifkan campaign dari dashboard campaign.";
+                campaignValue.textContent = "-";
+                totalValue.textContent = rupiah(0);
+                return;
+            }
+
+            activeCampaigns.forEach((campaign) => {
+                const option = document.createElement("option");
+                option.value = String(campaign.id);
+                option.textContent = campaign.title + " (ID " + campaign.id + ")";
+                campaignSelect.appendChild(option);
+            });
+
+            const chosenCampaign = activeCampaigns.find((campaign) => Number(campaign.id) === requestedCampaignId) || activeCampaigns[0];
+            campaignSelect.value = String(chosenCampaign.id);
+
+            campaignSelect.disabled = false;
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = "1";
+            refreshBtn.disabled = false;
+
+            campaignMeta.textContent = chosenCampaign.title + " · target " + rupiah(Number(chosenCampaign.target_amount || 0));
+        }
+
         async function refreshCampaignTotal() {
-            const campaignId = Number(campaignIdInput.value || 0);
+            const campaignId = getSelectedCampaignId();
+            const selectedCampaign = getSelectedCampaign();
 
             if (!campaignId) {
-                showToast("Campaign ID belum valid.", "err");
+                showToast("Pilih campaign aktif terlebih dahulu.", "err");
                 return;
             }
 
@@ -617,9 +679,9 @@
                 }
 
                 const data = await response.json();
-                campaignValue.textContent = String(data.campaign_id ?? campaignId);
+                campaignValue.textContent = selectedCampaign ? selectedCampaign.title : ("ID " + String(data.campaign_id ?? campaignId));
                 totalValue.textContent = rupiah(Number(data.total_donations || 0));
-                pushFeed("Total campaign " + campaignId + " diperbarui ke " + totalValue.textContent + ".");
+                pushFeed("Total campaign " + (selectedCampaign ? selectedCampaign.title : campaignId) + " diperbarui ke " + totalValue.textContent + ".");
             } catch (error) {
                 showToast(error.message || "Terjadi kesalahan saat refresh total.", "err");
             }
@@ -641,16 +703,19 @@
 
                 campaignCountAll.textContent = String(Array.isArray(allData) ? allData.length : 0);
                 campaignCountActive.textContent = String(Array.isArray(activeData) ? activeData.length : 0);
+                applyActiveCampaignOptions(activeData);
             } catch (error) {
                 campaignCountAll.textContent = "-";
                 campaignCountActive.textContent = "-";
+                applyActiveCampaignOptions([]);
             }
         }
 
         donationForm.addEventListener("submit", async (event) => {
             event.preventDefault();
 
-            const campaignId = Number(campaignIdInput.value || 0);
+            const campaignId = getSelectedCampaignId();
+            const selectedCampaign = getSelectedCampaign();
             const amount = Number(amountInput.value || 0);
             const isAnonymous = isAnonymousInput.checked;
             const donorName = donorNameInput.value.trim();
@@ -658,7 +723,7 @@
             const note = noteInput.value.trim();
 
             if (!campaignId || !amount) {
-                showToast("Campaign ID dan nominal wajib diisi.", "err");
+                showToast("Campaign aktif dan nominal wajib diisi.", "err");
                 return;
             }
 
@@ -699,7 +764,7 @@
                     " berdonasi " +
                     rupiah(Number(data.data?.amount || amount)) +
                     " untuk campaign " +
-                    String(data.data?.campaign_id || campaignId) +
+                    (selectedCampaign ? selectedCampaign.title : String(data.data?.campaign_id || campaignId)) +
                     "."
                 );
 
@@ -711,12 +776,21 @@
             } catch (error) {
                 showToast(error.message || "Terjadi kesalahan saat submit.", "err");
             } finally {
-                submitBtn.disabled = false;
-                submitBtn.style.opacity = "1";
+                submitBtn.disabled = campaignSelect.disabled;
+                submitBtn.style.opacity = campaignSelect.disabled ? "0.55" : "1";
             }
         });
 
         refreshBtn.addEventListener("click", refreshCampaignTotal);
+
+        campaignSelect.addEventListener("change", async () => {
+            const selectedCampaign = getSelectedCampaign();
+            if (selectedCampaign) {
+                campaignMeta.textContent = selectedCampaign.title + " · target " + rupiah(Number(selectedCampaign.target_amount || 0));
+            }
+
+            await refreshCampaignTotal();
+        });
 
         isAnonymousInput.addEventListener("change", () => {
             if (isAnonymousInput.checked) {
@@ -729,8 +803,14 @@
             }
         });
 
-        refreshCampaignTotal();
-        refreshCampaignSnapshot();
+        async function bootstrap() {
+            await refreshCampaignSnapshot();
+            if (getSelectedCampaignId()) {
+                await refreshCampaignTotal();
+            }
+        }
+
+        bootstrap();
     </script>
 </body>
 </html>
