@@ -25,6 +25,10 @@
         }
 
         * {
+        select option {
+            color: #0f2348;
+            background: #eef4ff;
+        }
             box-sizing: border-box;
         }
 
@@ -42,6 +46,10 @@
         }
 
         .shell {
+        select option {
+            color: #0f2348;
+            background: #eef4ff;
+        }
             width: min(1050px, 100%);
             margin: 0 auto;
             animation: fade-up 700ms ease-out;
@@ -322,12 +330,12 @@
 <body>
 <main class="shell">
     <section class="hero">
-        <h1>Buat Akun Baru Dengan Akses Aman dan Cepat</h1>
-        <p>Daftarkan akun donor atau organizer untuk mulai mengelola penggalangan dana, memantau aktivitas, dan menjaga alur kerja tetap konsisten.</p>
+        <h1>Modul User & Authentication</h1>
+        <p>Buat akun donor atau organizer untuk masuk ke alur JWT yang sama, sehingga halaman login dan dashboard memakai gaya yang seragam.</p>
         <div class="chips">
-            <span class="chip">User Registration API</span>
-            <span class="chip">Role Based Access</span>
-            <span class="chip">Campaign Ready Workflow</span>
+            <span class="chip">JWT Login</span>
+            <span class="chip">Donation History</span>
+            <span class="chip">Organizer Verification</span>
         </div>
     </section>
 

@@ -25,6 +25,10 @@
         }
 
         * {
+        select option {
+            color: #0f2348;
+            background: #eef4ff;
+        }
             box-sizing: border-box;
         }
 
@@ -42,6 +46,10 @@
         }
 
         .shell {
+        select option {
+            color: #0f2348;
+            background: #eef4ff;
+        }
             width: min(1050px, 100%);
             margin: 0 auto;
             animation: fade-up 700ms ease-out;
@@ -310,12 +318,12 @@
 <body>
 <main class="shell">
     <section class="hero">
-        <h1>Kelola Campaign Dengan Akses Aman dan Cepat</h1>
-        <p>Masuk untuk memantau aktivitas donasi, memproses pembaruan campaign, dan menjaga performa penggalangan tetap real-time.</p>
+        <h1>Modul User & Authentication</h1>
+        <p>Masuk untuk memakai session JWT, melihat riwayat donasi pribadi, dan membuka dashboard verifikasi akun organisasi dengan tampilan yang seragam.</p>
         <div class="chips">
-            <span class="chip">Campaign Management API</span>
-            <span class="chip">Donation Processing API</span>
-            <span class="chip">Integration Branch Preview</span>
+            <span class="chip">JWT Login</span>
+            <span class="chip">Donation History</span>
+            <span class="chip">Organizer Verification</span>
         </div>
     </section>
 
@@ -396,6 +404,8 @@ document.getElementById("loginForm").addEventListener("submit", async function (
 
         if (data.token) {
             localStorage.setItem("token", data.token);
+            localStorage.setItem("user_role", data.user?.role || "-");
+            localStorage.setItem("user_name", data.user?.name || "-");
             notice.className = "notice success";
             notice.textContent = "Login berhasil, mengarahkan ke dashboard...";
             window.location.href = "/dashboard";
