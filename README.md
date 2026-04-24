@@ -3,7 +3,7 @@ Crowdfunding platform backend (Team 13) for managing campaigns, processing donat
 
 ## Overview
 
-Project ini menggabungkan modul Campaign Management dan Donation Processing dalam satu backend Laravel.
+Project ini menggabungkan modul Campaign Management, Donation Processing, User & Auth dalam satu backend Laravel.
 
 Fokus integrasi:
 - Pengelolaan kampanye donasi
