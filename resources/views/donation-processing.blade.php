@@ -517,7 +517,7 @@
 
             <aside class="panel">
                 <h2>Campaign Live Total</h2>
-                <p class="panel-sub">Pantau total dana terkumpul dari endpoint agregasi.</p>
+                <p class="panel-sub">Pantau total dana yang terkumpul</p>
 
                 <div class="stats">
                     <div class="stat">
