@@ -255,6 +255,11 @@
             font-size: 12px;
         }
 
+        .module-strip a {
+            text-decoration: none;
+            color: inherit;
+        }
+
         .metrics {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -294,7 +299,7 @@
 
         .workspace {
             display: grid;
-            grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+            grid-template-columns: minmax(0, 1fr);
             gap: 16px;
             align-items: start;
         }
@@ -747,16 +752,12 @@
             </div>
 
             <section class="hero">
-                <h2>Campaign Dashboard Management</h2>
-                <p>
-                    Tampilan ini dipakai sebagai pusat navigasi untuk campaign, donation processing, dan slot modul berikutnya.
-                    Data campaign ditarik langsung dari API supaya dashboard tetap hidup dan bisa dipakai sebagai titik awal integrasi.
-                </p>
+                <h2>Campaign Management</h2>
                 <div class="module-strip">
                     <span class="module-pill">Campaign list</span>
                     <span class="module-pill">Create & edit campaign</span>
                     <span class="module-pill">Status aktif/selesai</span>
-                    <span class="module-pill">Menu untuk modul tambahan</span>
+                    <a class="module-pill" href="/donation-categories">Manajemen kategori donasi</a>
                 </div>
             </section>
 
@@ -803,7 +804,7 @@
                     <div class="panel-header">
                         <div>
                             <h3>Campaign Management</h3>
-                            <p>Tambah campaign baru, edit campaign yang sudah ada, atau ubah status langsung dari dashboard.</p>
+                            <p>Kelola campaign: tambah, edit, hapus, ubah status.</p>
                         </div>
                     </div>
 
@@ -872,33 +873,6 @@
                                 </tr>
                             </tbody>
                         </table>
-                    </div>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-header">
-                        <div>
-                            <h3>Panel Modul</h3>
-                            <p>Slot ini membantu menyusun workspace multi-modul. Saat modul lain selesai, cukup tambahkan menu baru di sidebar.</p>
-                        </div>
-                    </div>
-                    <div class="body">
-                        <div class="sidebar-card" style="margin-top:0">
-                            <h3>Donation Processing</h3>
-                            <p>Modul donasi tetap tersedia di halaman terpisah. Dashboard ini hanya menjadi pintu masuk dan pusat navigasi.</p>
-                        </div>
-                        <div class="sidebar-card">
-                            <h3>Modul berikutnya</h3>
-                            <p>Item menu sudah disiapkan sebagai placeholder supaya integrasi modul tambahan nanti tidak perlu ubah struktur UI utama.</p>
-                        </div>
-                        <div class="sidebar-card">
-                            <h3>Route cepat</h3>
-                            <p>
-                                <span style="color:#e2e8f0">/</span> untuk dashboard, 
-                                <span style="color:#e2e8f0">/campaigns</span> untuk alias dashboard, dan 
-                                <span style="color:#e2e8f0">/donation-processing</span> untuk modul donasi.
-                            </p>
-                        </div>
                     </div>
                 </div>
             </section>

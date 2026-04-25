@@ -19,6 +19,10 @@ Route::get('/donations', function () {
     return view('donation-processing');
 })->name('donation.module');
 
+Route::get('/donation-categories', function () {
+    return view('donation-categories');
+})->name('donation.categories');
+
 Route::get('/welcome', function () {
     return view('welcome');
 });
