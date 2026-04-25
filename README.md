@@ -18,6 +18,65 @@ Fokus integrasi:
 - PHP 8.4
 - Docker dan Docker Compose
 
+## Quick Start (Baru Install Docker)
+
+Panduan ini untuk teman tim yang baru pertama kali setup project di laptopnya.
+
+1. Clone repo lalu masuk ke folder project
+
+```bash
+git clone <URL_REPOSITORY_KALIAN>
+cd team-13-crowdfunding-platform
+```
+
+2. Build dan jalankan container
+
+```bash
+docker compose up -d --build
+```
+
+3. Install dependency Laravel di container
+
+```bash
+docker compose exec app composer install
+```
+
+4. Siapkan environment (jika file `.env` belum ada)
+
+```bash
+cp .env.example .env
+```
+
+5. Generate app key
+
+```bash
+docker compose exec app php artisan key:generate
+```
+
+6. Migrasi dan seed database
+
+```bash
+docker compose exec app php artisan migrate --seed
+```
+
+7. Jalankan server Laravel
+
+```bash
+docker compose exec app php artisan serve --host=0.0.0.0 --port=8000
+```
+
+8. Buka aplikasi
+
+```text
+http://localhost:8000
+```
+
+Jika perintah `cp` tidak tersedia di Windows PowerShell, gunakan:
+
+```powershell
+Copy-Item .env.example .env
+```
+
 ## Run With Docker
 
 Kalau ingin memastikan image terbaru dipakai di mesin lokal, jalankan ini dulu:
