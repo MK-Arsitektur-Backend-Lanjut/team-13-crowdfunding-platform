@@ -1,0 +1,7 @@
+$kind: http-request
+url: "{{base_url}}/api/auth/refresh"
+method: POST
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+order: 3000

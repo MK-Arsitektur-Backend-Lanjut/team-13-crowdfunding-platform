@@ -786,6 +786,16 @@
                     <p class="v" id="totalCollected">Rp0</p>
                     <div class="s">Akumulasi donasi masuk di semua campaign.</div>
                 </article>
+                <article class="metric-card">
+                    <p class="k">Donatur Aktif</p>
+                    <p class="v" id="activeDonorsMetric">0</p>
+                    <div class="s">Donor terverifikasi yang sudah pernah donasi sukses.</div>
+                </article>
+                <article class="metric-card">
+                    <p class="k">Seed Donor Aktif</p>
+                    <p class="v" id="seededActiveDonorsMetric">0</p>
+                    <div class="s">Monitoring requirement minimal 20.000 donor aktif dari seeder.</div>
+                </article>
             </section>
 
             <section class="workspace">
@@ -904,6 +914,8 @@
         const finishedCampaigns = document.getElementById("finishedCampaigns");
         const totalTarget = document.getElementById("totalTarget");
         const totalCollected = document.getElementById("totalCollected");
+        const activeDonorsMetric = document.getElementById("activeDonorsMetric");
+        const seededActiveDonorsMetric = document.getElementById("seededActiveDonorsMetric");
         const filterButtons = Array.from(document.querySelectorAll("[data-filter]"));
         const campaignForm = document.getElementById("campaignForm");
         const editingCampaignId = document.getElementById("editingCampaignId");
@@ -934,6 +946,12 @@
                 currency: "IDR",
                 maximumFractionDigits: 0,
             }).format(numericValue);
+        }
+
+        function formatNumber(value) {
+            return new Intl.NumberFormat("id-ID", {
+                maximumFractionDigits: 0,
+            }).format(Number(value || 0));
         }
 
         function formatDate(value) {
@@ -1006,6 +1024,27 @@
             );
 
             return rows;
+        }
+
+        async function loadDonationStats() {
+            try {
+                const response = await fetch("/api/donations/stats", {
+                    headers: {
+                        Accept: "application/json",
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error("Gagal memuat statistik donor.");
+                }
+
+                const data = await response.json();
+                activeDonorsMetric.textContent = formatNumber(data.active_donors || 0);
+                seededActiveDonorsMetric.textContent = formatNumber(data.seeded_active_donors || 0);
+            } catch (error) {
+                activeDonorsMetric.textContent = "-";
+                seededActiveDonorsMetric.textContent = "-";
+            }
         }
 
         function renderTable(list) {
@@ -1086,9 +1125,12 @@
                 const campaignList = Array.isArray(data) ? data : [];
                 const campaignWithTotals = await attachDonationTotals(campaignList);
                 applyCampaignData(campaignWithTotals);
+                await loadDonationStats();
             } catch (error) {
                 console.error(error);
                 campaignTableBody.innerHTML = '<tr><td colspan="7" class="empty">Data campaign tidak bisa dimuat.</td></tr>';
+                activeDonorsMetric.textContent = "-";
+                seededActiveDonorsMetric.textContent = "-";
                 showToast("Gagal memuat campaign.", "err");
             }
         }

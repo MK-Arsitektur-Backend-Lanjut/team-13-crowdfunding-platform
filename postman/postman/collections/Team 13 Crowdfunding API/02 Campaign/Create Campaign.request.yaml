@@ -1,0 +1,28 @@
+$kind: http-request
+url: "{{base_url}}/api/campaigns"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "title": "Campaign Dari Postman",
+      "description": "Campaign untuk test API dari Postman",
+      "target_amount": 75000000,
+      "status": "aktif"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status is 201', function () {
+        pm.response.to.have.status(201);
+      });
+      const json = pm.response.json();
+      if (json && json.id) {
+        pm.collectionVariables.set('campaign_id', String(json.id));
+        pm.environment.set('campaign_id', String(json.id));
+      }
+    language: text/javascript
+order: 3000

@@ -1,0 +1,7 @@
+$kind: http-request
+url: "{{base_url}}/api/donations/history/{{donation_id}}"
+method: GET
+headers:
+  Accept: application/json
+  Authorization: Bearer {{token}}
+order: 2000

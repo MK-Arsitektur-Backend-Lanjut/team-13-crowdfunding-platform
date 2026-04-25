@@ -1,0 +1,29 @@
+$kind: http-request
+url: "{{base_url}}/api/auth/login"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "email": "{{test_email}}",
+      "password": "{{test_password}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status is 200', function () {
+        pm.response.to.have.status(200);
+      });
+      const json = pm.response.json();
+      if (json && json.data && json.data.token) {
+        pm.collectionVariables.set('token', json.data.token);
+        pm.environment.set('token', json.data.token);
+      }
+      pm.test('Token tersimpan', function () {
+        pm.expect(pm.collectionVariables.get('token') || pm.environment.get('token')).to.be.ok;
+      });
+    language: text/javascript
+order: 1000

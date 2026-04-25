@@ -8,6 +8,8 @@ use App\Repositories\CampaignRepositoryInterface;
 use App\Repositories\DonationCategoryRepository;
 use App\Repositories\DonationCategoryRepositoryInterface;
 use App\Repositories\EloquentDonationRepository;
+use App\Repositories\UserRepository;
+use App\Repositories\UserRepositoryInterface;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -20,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(CampaignRepositoryInterface::class, CampaignRepository::class);
         $this->app->bind(DonationCategoryRepositoryInterface::class, DonationCategoryRepository::class);
         $this->app->bind(DonationRepositoryInterface::class, EloquentDonationRepository::class);
+        $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
     }
 
     /**

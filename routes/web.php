@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PageController;
 
 Route::get('/', function () {
     return view('dashboard');
@@ -20,4 +21,10 @@ Route::get('/donations', function () {
 
 Route::get('/welcome', function () {
     return view('welcome');
+});
+
+Route::prefix('auth')->group(function () {
+    Route::get('/register', [PageController::class, 'registerPage'])->name('auth.register');
+    Route::get('/login', [PageController::class, 'loginPage'])->name('auth.login');
+    Route::get('/dashboard', [PageController::class, 'dashboard'])->name('auth.dashboard');
 });

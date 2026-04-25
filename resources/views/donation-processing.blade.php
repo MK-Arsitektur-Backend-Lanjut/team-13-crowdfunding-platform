@@ -449,10 +449,10 @@
     <div class="noise"></div>
     <div class="page">
         <section class="hero">
-            <span class="badge">STUDI KASUS TIM 13 · Donation Processing</span>
-            <h1>Kelola Donasi Viral Tanpa Hitung Ganda</h1>
+            <span class="badge">STUDI KASUS TIM 13 · Donation Processing · Rendizar Satria Bahariansyah</span>
+            <h1>Donation Processing</h1>
             <p>
-                Form ini terhubung ke API Donation Processing: input donasi, dukung mode anonim,
+                Form ini terhubung ke API Donation Processing: input donasi, mendukung mode anonim,
                 dan cek akumulasi total campaign secara langsung.
             </p>
             <div class="module-strip">
@@ -745,15 +745,23 @@
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
+                        Accept: "application/json",
                         "X-Idempotency-Key": currentIdemKey,
                     },
                     body: JSON.stringify(payload),
                 });
 
-                const data = await response.json();
+                const rawBody = await response.text();
+                let data = {};
+
+                try {
+                    data = rawBody ? JSON.parse(rawBody) : {};
+                } catch {
+                    data = {};
+                }
 
                 if (!response.ok) {
-                    const message = data.message || "Gagal memproses donasi.";
+                    const message = data.message || "Gagal memproses donasi. Pastikan API route tersedia dan response backend valid.";
                     throw new Error(message);
                 }
 

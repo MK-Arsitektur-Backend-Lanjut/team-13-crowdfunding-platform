@@ -1,0 +1,502 @@
+{
+  "info": {
+    "name": "Team 13 Crowdfunding API",
+    "description": "Collection untuk testing modul Campaign Management, Donation Processing, dan User/Auth.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "campaign_id",
+      "value": "1"
+    },
+    {
+      "key": "donation_id",
+      "value": "1"
+    },
+    {
+      "key": "category_id",
+      "value": "1"
+    },
+    {
+      "key": "test_email",
+      "value": "personal@test.local"
+    },
+    {
+      "key": "test_password",
+      "value": "Test12345!"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "  pm.environment.set('token', json.data.token);",
+                  "}",
+                  "pm.test('Token tersimpan', function () {",
+                  "  pm.expect(pm.collectionVariables.get('token') || pm.environment.get('token')).to.be.ok;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{test_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Donor\",\n  \"email\": \"postman.donor@example.com\",\n  \"password\": \"Postman123!\",\n  \"role\": \"personal\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token (JWT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Campaign",
+      "item": [
+        {
+          "name": "List Campaign",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/campaigns",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "campaigns"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Campaign Aktif",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/campaigns/status/aktif",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "campaigns",
+                "status",
+                "aktif"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Campaign",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json && json.id) {",
+                  "  pm.collectionVariables.set('campaign_id', String(json.id));",
+                  "  pm.environment.set('campaign_id', String(json.id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Campaign Dari Postman\",\n  \"description\": \"Campaign untuk test API dari Postman\",\n  \"target_amount\": 75000000,\n  \"status\": \"aktif\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/campaigns",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "campaigns"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Campaign Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"selesai\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/campaigns/{{campaign_id}}/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "campaigns",
+                "{{campaign_id}}",
+                "status"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Donation Public",
+      "item": [
+        {
+          "name": "Create Donation (Public)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const key = 'pm-donation-' + Date.now() + '-' + Math.floor(Math.random() * 1000000);",
+                  "pm.variables.set('idempotency_key', key);",
+                  "pm.collectionVariables.set('idempotency_key', key);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('donation_id', String(json.data.id));",
+                  "  pm.environment.set('donation_id', String(json.data.id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"campaign_id\": {{campaign_id}},\n  \"amount\": 125000,\n  \"is_anonymous\": false,\n  \"donor_name\": \"Postman User\",\n  \"note\": \"Donasi test dari collection Postman\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/donations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "donations"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Campaign Total",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/campaigns/{{campaign_id}}/donations/total",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "campaigns",
+                "{{campaign_id}}",
+                "donations",
+                "total"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Donation Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/donations/stats",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "donations",
+                "stats"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Donation History (JWT)",
+      "item": [
+        {
+          "name": "Get Donation History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/donations/history?per_page=10&sort_by=created_at&sort_dir=desc",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "donations",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "10"
+                },
+                {
+                  "key": "sort_by",
+                  "value": "created_at"
+                },
+                {
+                  "key": "sort_dir",
+                  "value": "desc"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Donation Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/donations/history/{{donation_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "donations",
+                "history",
+                "{{donation_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Donation Category",
+      "item": [
+        {
+          "name": "List Donation Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/donation-categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "donation-categories"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
