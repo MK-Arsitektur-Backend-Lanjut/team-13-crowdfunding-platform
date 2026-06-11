@@ -15,11 +15,20 @@ class DonationCategoryController extends Controller
     ) {
     }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $categories = $this->categoryRepository->getAll();
+        $page = (int) $request->query('page', 1);
+        $categories = $this->categoryRepository->getAll($page);
 
-        return response()->json($categories);
+        return response()->json([
+            'data' => $categories->items(),
+            'meta' => [
+                'current_page' => $categories->currentPage(),
+                'last_page' => $categories->lastPage(),
+                'per_page' => $categories->perPage(),
+                'total' => $categories->total(),
+            ],
+        ]);
     }
 
     public function show(DonationCategory $category): JsonResponse

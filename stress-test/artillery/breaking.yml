@@ -1,0 +1,19 @@
+config:
+  target: "http://localhost:8000"
+  phases:
+    - duration: 30
+      arrivalRate: 50
+      name: Ramp up
+    - duration: 60
+      arrivalRate: 200
+      name: Breaking point (200 VUs)
+    - duration: 60
+      arrivalRate: 500
+      name: Overload (500 VUs)
+  http:
+    timeout: 30
+scenarios:
+  - name: Maximum load
+    flow:
+      - get:
+          url: "/api/campaigns?page=1"

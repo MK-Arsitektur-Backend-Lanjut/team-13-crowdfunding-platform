@@ -16,11 +16,20 @@ class CampaignController extends Controller
     ) {
     }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $campaigns = $this->campaignRepository->getAll();
+        $page = (int) $request->query('page', 1);
+        $campaigns = $this->campaignRepository->getAll($page);
 
-        return response()->json($campaigns);
+        return response()->json([
+            'data' => $campaigns->items(),
+            'meta' => [
+                'current_page' => $campaigns->currentPage(),
+                'last_page' => $campaigns->lastPage(),
+                'per_page' => $campaigns->perPage(),
+                'total' => $campaigns->total(),
+            ],
+        ]);
     }
 
     public function show(Campaign $campaign): JsonResponse
@@ -80,7 +89,7 @@ class CampaignController extends Controller
         return response()->json($campaign->fresh());
     }
 
-    public function getByStatus(string $status): JsonResponse
+    public function getByStatus(Request $request, string $status): JsonResponse
     {
         if (! in_array($status, ['aktif', 'selesai'], true)) {
             return response()->json([
@@ -88,8 +97,17 @@ class CampaignController extends Controller
             ], 422);
         }
 
-        $campaigns = $this->campaignRepository->getByStatus($status);
+        $page = (int) $request->query('page', 1);
+        $campaigns = $this->campaignRepository->getByStatus($status, $page);
 
-        return response()->json($campaigns);
+        return response()->json([
+            'data' => $campaigns->items(),
+            'meta' => [
+                'current_page' => $campaigns->currentPage(),
+                'last_page' => $campaigns->lastPage(),
+                'per_page' => $campaigns->perPage(),
+                'total' => $campaigns->total(),
+            ],
+        ]);
     }
 }

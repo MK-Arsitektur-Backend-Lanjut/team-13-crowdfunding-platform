@@ -18,8 +18,8 @@ class DonationSeeder extends Seeder
 
         $campaignIds = DB::table('campaigns')->pluck('id')->all();
 
-        if ($campaignIds === []) {
-            $campaignBatch = [];
+        if ($campaignIds === []) {  
+            $campaignBatch = [];    
 
             for ($i = 1; $i <= 50; $i++) {
                 $campaignBatch[] = [

@@ -3,11 +3,11 @@
 namespace App\Repositories;
 
 use App\Models\Campaign;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface CampaignRepositoryInterface
 {
-    public function getAll(): Collection;
+    public function getAll(int $page = 1): LengthAwarePaginator;
 
     public function create(array $data): Campaign;
 
@@ -17,5 +17,5 @@ interface CampaignRepositoryInterface
 
     public function updateStatus(Campaign $campaign, string $status): bool;
 
-    public function getByStatus(string $status): Collection;
+    public function getByStatus(string $status, int $page = 1): LengthAwarePaginator;
 }

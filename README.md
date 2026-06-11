@@ -87,6 +87,12 @@ docker compose build --no-cache app
 docker compose up -d
 ```
 
+Untuk eksplorasi caching Redis lokal:
+
+```bash
+docker compose up -d redis
+```
+
 Setelah container aktif, lanjutkan migrasi dan buka aplikasi:
 
 ```bash
@@ -189,6 +195,22 @@ Jalankan test:
 
 ```bash
 docker compose run --rm --no-TTY app php artisan test --filter=DonationProcessingTest
+```
+
+## Stress Testing
+
+Skenario load test tersedia di folder `stress-test/artillery`.
+
+```bash
+npm run stress:read
+npm run stress:write
+npm run stress:mixed
+```
+
+Quick benchmark:
+
+```bash
+npm run stress:quick
 ```
 
 ## Postman Quick Test

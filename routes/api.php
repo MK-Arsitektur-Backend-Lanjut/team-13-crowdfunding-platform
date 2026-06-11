@@ -22,7 +22,7 @@ Route::post('/auth/verify/{id}', [AuthController::class, 'verify'])->middleware(
 | CAMPAIGN ROUTES
 |--------------------------------------------------------------------------
 */
-Route::prefix('campaigns')->group(function (): void {
+Route::prefix('campaigns')->middleware('throttle:100,1')->group(function (): void {
     Route::get('/', [CampaignController::class, 'index']);
     Route::get('/status/{status}', [CampaignController::class, 'getByStatus']);
     Route::post('/', [CampaignController::class, 'store']);

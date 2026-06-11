@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class DonationController extends Controller
 {
@@ -41,32 +42,36 @@ class DonationController extends Controller
 
     public function stats(): JsonResponse
     {
-        $activeDonors = DB::table('users')
-            ->where('role', 'donor')
-            ->where('is_verified', true)
-            ->whereExists(function ($query): void {
-                $query->select(DB::raw(1))
-                    ->from('donations')
-                    ->whereColumn('donations.user_id', 'users.id')
-                    ->where('donations.status', 'success');
-            })
-            ->count();
+        $stats = Cache::remember('donation:stats:v2', now()->addSeconds(300), function (): array {
+            $lock = Cache::lock('donation:stats:lock', 10);
+            $lock->block(5);
 
-        $seededActiveDonors = DB::table('users')
-            ->where('email', 'like', 'donor%@seed.local')
-            ->where('role', 'donor')
-            ->where('is_verified', true)
-            ->count();
+            try {
+                $activeDonors = DB::table('users')
+                    ->where('role', 'donor')
+                    ->where('is_verified', true)
+                    ->whereExists(function ($query): void {
+                        $query->select(DB::raw(1))
+                            ->from('donations')
+                            ->whereColumn('donations.user_id', 'users.id')
+                            ->where('donations.status', 'success');
+                    })
+                    ->count();
 
-        $totalDonations = DB::table('donations')
-            ->where('status', 'success')
-            ->count();
+                $totalDonations = DB::table('donations')
+                    ->where('status', 'success')
+                    ->count();
 
-        return response()->json([
-            'active_donors' => (int) $activeDonors,
-            'seeded_active_donors' => (int) $seededActiveDonors,
-            'total_success_donations' => (int) $totalDonations,
-        ]);
+                return [
+                    'active_donors' => (int) $activeDonors,
+                    'total_success_donations' => (int) $totalDonations,
+                ];
+            } finally {
+                $lock->release();
+            }
+        });
+
+        return response()->json($stats);
     }
 
     public function history(Request $request): JsonResponse
