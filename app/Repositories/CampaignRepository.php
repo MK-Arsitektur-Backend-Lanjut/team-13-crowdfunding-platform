@@ -4,21 +4,16 @@ namespace App\Repositories;
 
 use App\Models\Campaign;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Cache;
 
 class CampaignRepository implements CampaignRepositoryInterface
 {
-    private const CACHE_TTL = 300; // 5 minutes
-    private const CACHE_STALE_TTL = 60; // 1 minute grace period for stale-while-revalidate
-    private const PER_PAGE = 20;
-
-    public function getAll(int $page = 1): LengthAwarePaginator
+    public function getAll(int $perPage = 15): LengthAwarePaginator
     {
-        $cacheKey = "campaigns:all:v2:page:{$page}";
-
-        return Cache::flexible($cacheKey, [self::CACHE_TTL, self::CACHE_TTL + 60], function () use ($page): LengthAwarePaginator {
-            return Campaign::query()->latest()->paginate(self::PER_PAGE, ['*'], 'page', $page);
-        });
+        return Campaign::query()
+            ->leftJoin('donation_totals', 'campaigns.id', '=', 'donation_totals.campaign_id')
+            ->select('campaigns.*', 'donation_totals.total_amount as total_donations')
+            ->latest('campaigns.created_at')
+            ->paginate($perPage);
     }
 
     public function create(array $data): Campaign
@@ -62,24 +57,13 @@ class CampaignRepository implements CampaignRepositoryInterface
         return $updated;
     }
 
-    public function getByStatus(string $status, int $page = 1): LengthAwarePaginator
+    public function getByStatus(string $status, int $perPage = 15): LengthAwarePaginator
     {
-        $cacheKey = "campaigns:status:{$status}:v2:page:{$page}";
-
-        return Cache::flexible($cacheKey, [self::CACHE_TTL, self::CACHE_TTL + self::CACHE_STALE_TTL], function () use ($status, $page): LengthAwarePaginator {
-            return Campaign::query()
-                ->where('status', $status)
-                ->latest()
-                ->paginate(self::PER_PAGE, ['*'], 'page', $page);
-        });
-    }
-
-    private function forgetCache(): void
-    {
-        // Flush all campaign list caches - uses pattern-based flush via tags if supported
-        // For Redis without tags, clear known keys
-        Cache::forget('campaigns:all:v1');
-        Cache::forget('campaigns:status:aktif:v1');
-        Cache::forget('campaigns:status:selesai:v1');
+        return Campaign::query()
+            ->leftJoin('donation_totals', 'campaigns.id', '=', 'donation_totals.campaign_id')
+            ->select('campaigns.*', 'donation_totals.total_amount as total_donations')
+            ->where('campaigns.status', $status)
+            ->latest('campaigns.created_at')
+            ->paginate($perPage);
     }
 }

@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Campaign extends Model
 {
@@ -16,7 +16,8 @@ class Campaign extends Model
     ];
 
     protected $casts = [
-        'target_amount' => 'decimal:2',
+        'target_amount'    => 'decimal:2',
+        'total_donations'  => 'decimal:2', 
     ];
 
     public function donations(): HasMany
@@ -24,8 +25,12 @@ class Campaign extends Model
         return $this->hasMany(Donation::class);
     }
 
-    public function total(): HasOne
+    public function scopeWithTotalDonations(Builder $query): Builder
     {
-        return $this->hasOne(DonationTotal::class, 'campaign_id');
+        return $query->addSelect([
+            'total_donations' => \DB::table('donations')
+                ->selectRaw('COALESCE(SUM(amount), 0)')
+                ->whereColumn('campaign_id', 'campaigns.id'),
+        ]);
     }
 }
