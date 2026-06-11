@@ -1,0 +1,46 @@
+config:
+  target: "http://localhost:8000"
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      name: Warm up
+    - duration: 180
+      arrivalRate: 30
+      name: Sustained read load
+    - duration: 120
+      arrivalRate: 50
+      name: Peak read load
+  processor: "./processor.cjs"
+  http:
+    timeout: 15
+
+scenarios:
+  - name: Public read endpoints
+    weight: 80
+    flow:
+      - get:
+          url: "/api/campaigns"
+      - get:
+          url: "/api/campaigns/status/aktif"
+      - get:
+          url: "/api/donations/stats"
+      - get:
+          url: "/api/campaigns/1/donations/total"
+
+  - name: Authenticated history reads
+    weight: 20
+    flow:
+      - function: setAuthPayload
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ test_email }}"
+            password: "{{ test_password }}"
+          capture:
+            - json: "$.data.token"
+              as: "jwt"
+      - get:
+          url: "/api/donations/history?per_page=10&sort_by=created_at&sort_dir=desc"
+          headers:
+            Authorization: "Bearer {{ jwt }}"
+            Accept: "application/json"

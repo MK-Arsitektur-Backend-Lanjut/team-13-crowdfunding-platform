@@ -1,0 +1,19 @@
+config:
+  target: "http://localhost:8000"
+  phases:
+    - duration: 30
+      arrivalRate: 1
+      name: Cache warmup
+  http:
+    timeout: 30
+scenarios:
+  - name: Warmup caches
+    flow:
+      - get:
+          url: "/api/campaigns?page=1"
+      - get:
+          url: "/api/campaigns/status/aktif?page=1"
+      - get:
+          url: "/api/donations/stats"
+      - get:
+          url: "/api/donation-categories"

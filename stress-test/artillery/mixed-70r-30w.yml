@@ -1,0 +1,47 @@
+config:
+  target: "http://localhost:8000"
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      name: Warm up
+    - duration: 180
+      arrivalRate: 30
+      name: Sustained mixed load
+    - duration: 120
+      arrivalRate: 45
+      name: Peak mixed load
+  processor: "./processor.cjs"
+  http:
+    timeout: 20
+
+scenarios:
+  - name: Read path (70%)
+    weight: 70
+    flow:
+      - get:
+          url: "/api/campaigns"
+      - get:
+          url: "/api/campaigns/status/aktif"
+      - get:
+          url: "/api/donations/stats"
+      - get:
+          url: "/api/campaigns/1/donations/total"
+
+  - name: Write path (30%)
+    weight: 30
+    flow:
+      - function: setDynamicDonationPayload
+      - post:
+          url: "/api/donations"
+          headers:
+            Accept: "application/json"
+            Content-Type: "application/json"
+            X-Idempotency-Key: "{{ idempotency_key }}"
+          json:
+            campaign_id: "{{ campaign_id }}"
+            amount: "{{ amount }}"
+            is_anonymous: "{{ is_anonymous }}"
+            donor_name: "{{ donor_name }}"
+            note: "stress-test"
+      - get:
+          url: "/api/campaigns/1/donations/total"

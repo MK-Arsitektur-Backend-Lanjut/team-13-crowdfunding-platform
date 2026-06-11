@@ -1,0 +1,10 @@
+$kind: collection
+description: Collection untuk testing modul Campaign Management, Donation Processing, dan User/Auth.
+variables:
+  base_url: http://localhost:8000
+  token: ""
+  campaign_id: "1"
+  donation_id: "1"
+  category_id: "1"
+  test_email: personal@test.local
+  test_password: Test12345!
