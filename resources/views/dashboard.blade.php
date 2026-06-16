@@ -658,6 +658,76 @@
             }
         }
 
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 14px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .pagination-info {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pagination-controls button {
+            appearance: none;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-soft);
+            border-radius: 10px;
+            padding: 7px 13px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 160ms ease;
+        }
+
+        .pagination-controls button:hover:not(:disabled) {
+            background: rgba(56, 189, 248, 0.14);
+            border-color: rgba(56, 189, 248, 0.34);
+            color: var(--text-main);
+        }
+
+        .pagination-controls button:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .pagination-controls .page-current {
+            color: var(--text-main);
+            font-size: 13px;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .per-page-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .per-page-wrap select {
+            appearance: none;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-soft);
+            border-radius: 10px;
+            padding: 6px 10px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
         @media (max-width: 620px) {
             .metrics {
                 grid-template-columns: 1fr;
@@ -874,6 +944,23 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <div class="pagination" id="paginationBar">
+                        <div class="pagination-info" id="paginationInfo">–</div>
+                        <div class="pagination-controls">
+                            <button type="button" id="btnPrevPage" disabled>← Prev</button>
+                            <span class="page-current" id="pageCurrentLabel">Hal. 1</span>
+                            <button type="button" id="btnNextPage" disabled>Next →</button>
+                        </div>
+                        <div class="per-page-wrap">
+                            <label for="perPageSelect">Per halaman:</label>
+                            <select id="perPageSelect">
+                                <option value="15" selected>15</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>
@@ -901,8 +988,18 @@
         const resetButton = document.getElementById("resetButton");
         const toast = document.getElementById("toast");
 
+        // Pagination elements
+        const paginationInfo     = document.getElementById("paginationInfo");
+        const pageCurrentLabel   = document.getElementById("pageCurrentLabel");
+        const btnPrevPage        = document.getElementById("btnPrevPage");
+        const btnNextPage        = document.getElementById("btnNextPage");
+        const perPageSelect      = document.getElementById("perPageSelect");
+
         let currentFilter = "all";
-        let campaigns = [];
+        let currentPage   = 1;
+        let currentPerPage = 15;
+        let lastMeta      = null; 
+        let campaigns     = [];
 
         function escapeHtml(value) {
             return String(value)
@@ -965,57 +1062,35 @@
             const totalTargetValue = list.reduce((sum, item) => sum + Number(item.target_amount || 0), 0);
             const totalCollectedValue = list.reduce((sum, item) => sum + Number(item.total_donations || 0), 0);
 
-            totalCampaigns.textContent = String(list.length);
+            totalCampaigns.textContent = lastMeta ? String(lastMeta.total) : String(list.length);
             activeCampaigns.textContent = String(activeCount);
             finishedCampaigns.textContent = String(finishedCount);
             totalTarget.textContent = formatCurrency(totalTargetValue);
             totalCollected.textContent = formatCurrency(totalCollectedValue);
         }
 
-        async function attachDonationTotals(list) {
-            const rows = await Promise.all(
-                list.map(async (campaign) => {
-                    try {
-                        const response = await fetch("/api/campaigns/" + campaign.id + "/donations/total", {
-                            headers: {
-                                Accept: "application/json",
-                            },
-                        });
+        function updatePaginationUI() {
+            if (!lastMeta) return;
 
-                        if (!response.ok) {
-                            return { ...campaign, total_donations: 0 };
-                        }
-
-                        const payload = await response.json();
-                        return {
-                            ...campaign,
-                            total_donations: Number(payload.total_donations || 0),
-                        };
-                    } catch {
-                        return { ...campaign, total_donations: 0 };
-                    }
-                })
-            );
-
-            return rows;
+            const { current_page, last_page, from, to, total } = lastMeta;
+            paginationInfo.textContent = `Menampilkan ${from ?? 0}–${to ?? 0} dari ${total} campaign`;
+            pageCurrentLabel.textContent = `Hal. ${current_page} / ${last_page}`;
+            btnPrevPage.disabled = current_page <= 1;
+            btnNextPage.disabled = current_page >= last_page;
         }
 
         async function loadDonationStats() {
             try {
                 const response = await fetch("/api/donations/stats", {
-                    headers: {
-                        Accept: "application/json",
-                    },
+                    headers: { Accept: "application/json" },
                 });
 
-                if (!response.ok) {
-                    throw new Error("Gagal memuat statistik donor.");
-                }
+                if (!response.ok) throw new Error("Gagal memuat statistik donor.");
 
                 const data = await response.json();
                 activeDonorsMetric.textContent = formatNumber(data.active_donors || 0);
                 seededActiveDonorsMetric.textContent = formatNumber(data.seeded_active_donors || 0);
-            } catch (error) {
+            } catch {
                 activeDonorsMetric.textContent = "-";
                 seededActiveDonorsMetric.textContent = "-";
             }
@@ -1070,35 +1145,49 @@
             }).join("");
         }
 
-        function applyCampaignData(list) {
+        function applyCampaignData(list, meta) {
             campaigns = list;
+            lastMeta  = meta;
             updateMetrics(list);
             renderTable(list);
+            updatePaginationUI();
         }
 
-        async function loadCampaigns(filter = currentFilter) {
+        async function loadCampaigns(filter = currentFilter, page = currentPage) {
             currentFilter = filter;
+            currentPage   = page;
             setFilterButtonState(filter);
 
+            campaignTableBody.innerHTML = '<tr><td colspan="7" class="empty">Memuat campaign...</td></tr>';
+
+            const params = new URLSearchParams({
+                page:     String(page),
+                per_page: String(currentPerPage),
+            });
+
             const endpoint = filter === "all"
-                ? "/api/campaigns"
-                : "/api/campaigns/status/" + encodeURIComponent(filter);
+                ? `/api/campaigns?${params}`
+                : `/api/campaigns/status/${encodeURIComponent(filter)}?${params}`;
 
             try {
                 const response = await fetch(endpoint, {
-                    headers: {
-                        Accept: "application/json",
-                    },
+                    headers: { Accept: "application/json" },
                 });
 
-                if (!response.ok) {
-                    throw new Error("Gagal memuat campaign.");
-                }
+                if (!response.ok) throw new Error("Gagal memuat campaign.");
 
                 const data = await response.json();
-                const campaignList = Array.isArray(data) ? data : [];
-                const campaignWithTotals = await attachDonationTotals(campaignList);
-                applyCampaignData(campaignWithTotals);
+
+                const campaignList = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
+                const meta = data.current_page !== undefined ? {
+                    current_page: data.current_page,
+                    last_page:    data.last_page,
+                    from:         data.from,
+                    to:           data.to,
+                    total:        data.total,
+                } : null;
+
+                applyCampaignData(campaignList, meta);
                 await loadDonationStats();
             } catch (error) {
                 console.error(error);
@@ -1225,9 +1314,7 @@
 
         campaignTableBody.addEventListener("click", async (event) => {
             const button = event.target.closest("button[data-action]");
-            if (!button) {
-                return;
-            }
+            if (!button) return;
 
             const id = button.dataset.id;
             const campaign = campaigns.find((item) => String(item.id) === String(id));
@@ -1249,7 +1336,20 @@
         });
 
         filterButtons.forEach((button) => {
-            button.addEventListener("click", () => loadCampaigns(button.dataset.filter || "all"));
+            button.addEventListener("click", () => loadCampaigns(button.dataset.filter || "all", 1));
+        });
+
+        btnPrevPage.addEventListener("click", () => {
+            if (currentPage > 1) loadCampaigns(currentFilter, currentPage - 1);
+        });
+
+        btnNextPage.addEventListener("click", () => {
+            if (lastMeta && currentPage < lastMeta.last_page) loadCampaigns(currentFilter, currentPage + 1);
+        });
+
+        perPageSelect.addEventListener("change", () => {
+            currentPerPage = Number(perPageSelect.value);
+            loadCampaigns(currentFilter, 1); 
         });
 
         campaignForm.addEventListener("submit", saveCampaign);

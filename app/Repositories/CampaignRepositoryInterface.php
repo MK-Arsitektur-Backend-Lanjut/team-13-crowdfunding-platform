@@ -7,7 +7,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface CampaignRepositoryInterface
 {
-    public function getAll(int $page = 1): LengthAwarePaginator;
+    public function getAll(int $perPage = 15): LengthAwarePaginator;
 
     public function create(array $data): Campaign;
 
@@ -17,5 +17,5 @@ interface CampaignRepositoryInterface
 
     public function updateStatus(Campaign $campaign, string $status): bool;
 
-    public function getByStatus(string $status, int $page = 1): LengthAwarePaginator;
+    public function getByStatus(string $status, int $perPage = 15): LengthAwarePaginator;
 }

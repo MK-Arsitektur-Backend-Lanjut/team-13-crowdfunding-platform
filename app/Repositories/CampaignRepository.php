@@ -5,19 +5,30 @@ namespace App\Repositories;
 use App\Models\Campaign;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Pagination\Paginator;
 
 class CampaignRepository implements CampaignRepositoryInterface
 {
     private const CACHE_TTL = 300; // 5 minutes
-    private const PER_PAGE = 20;
 
-    public function getAll(int $page = 1): LengthAwarePaginator
+    public function getAll(int $perPage = 15): LengthAwarePaginator
     {
-        $cacheKey = "campaigns:all:v2:page:{$page}";
+        $page = Paginator::resolveCurrentPage();
+        $cacheKey = "campaigns:all:v2:per_page:{$perPage}:page:{$page}";
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($page): LengthAwarePaginator {
-            return Campaign::query()->latest()->paginate(self::PER_PAGE, ['*'], 'page', $page);
-        });
+        $callback = function () use ($perPage): LengthAwarePaginator {
+            return Campaign::query()
+                ->leftJoin('donation_totals', 'campaigns.id', '=', 'donation_totals.campaign_id')
+                ->select('campaigns.*', 'donation_totals.total_amount as total_donations')
+                ->latest('campaigns.created_at')
+                ->paginate($perPage);
+        };
+
+        try {
+            return Cache::tags(['campaigns'])->remember($cacheKey, self::CACHE_TTL, $callback);
+        } catch (\BadMethodCallException $e) {
+            return Cache::remember($cacheKey, self::CACHE_TTL, $callback);
+        }
     }
 
     public function create(array $data): Campaign
@@ -61,24 +72,38 @@ class CampaignRepository implements CampaignRepositoryInterface
         return $updated;
     }
 
-    public function getByStatus(string $status, int $page = 1): LengthAwarePaginator
+    public function getByStatus(string $status, int $perPage = 15): LengthAwarePaginator
     {
-        $cacheKey = "campaigns:status:{$status}:v2:page:{$page}";
+        $page = Paginator::resolveCurrentPage();
+        $cacheKey = "campaigns:status:{$status}:v2:per_page:{$perPage}:page:{$page}";
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($status, $page): LengthAwarePaginator {
+        $callback = function () use ($status, $perPage): LengthAwarePaginator {
             return Campaign::query()
-                ->where('status', $status)
-                ->latest()
-                ->paginate(self::PER_PAGE, ['*'], 'page', $page);
-        });
+                ->leftJoin('donation_totals', 'campaigns.id', '=', 'donation_totals.campaign_id')
+                ->select('campaigns.*', 'donation_totals.total_amount as total_donations')
+                ->where('campaigns.status', $status)
+                ->latest('campaigns.created_at')
+                ->paginate($perPage);
+        };
+
+        try {
+            return Cache::tags(['campaigns'])->remember($cacheKey, self::CACHE_TTL, $callback);
+        } catch (\BadMethodCallException $e) {
+            return Cache::remember($cacheKey, self::CACHE_TTL, $callback);
+        }
     }
 
     private function forgetCache(): void
     {
-        // Flush all campaign list caches - uses pattern-based flush via tags if supported
-        // For Redis without tags, clear known keys
-        Cache::forget('campaigns:all:v1');
-        Cache::forget('campaigns:status:aktif:v1');
-        Cache::forget('campaigns:status:selesai:v1');
+        try {
+            Cache::tags(['campaigns'])->flush();
+        } catch (\BadMethodCallException $e) {
+            // Fallback clear for drivers that don't support tags
+            for ($page = 1; $page <= 5; $page++) {
+                Cache::forget("campaigns:all:v2:per_page:15:page:{$page}");
+                Cache::forget("campaigns:status:aktif:v2:per_page:15:page:{$page}");
+                Cache::forget("campaigns:status:selesai:v2:per_page:15:page:{$page}");
+            }
+        }
     }
 }
