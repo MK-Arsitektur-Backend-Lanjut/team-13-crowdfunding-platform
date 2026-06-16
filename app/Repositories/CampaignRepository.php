@@ -9,14 +9,13 @@ use Illuminate\Support\Facades\Cache;
 class CampaignRepository implements CampaignRepositoryInterface
 {
     private const CACHE_TTL = 300; // 5 minutes
-    private const CACHE_STALE_TTL = 60; // 1 minute grace period for stale-while-revalidate
     private const PER_PAGE = 20;
 
     public function getAll(int $page = 1): LengthAwarePaginator
     {
         $cacheKey = "campaigns:all:v2:page:{$page}";
 
-        return Cache::flexible($cacheKey, [self::CACHE_TTL, self::CACHE_TTL + 60], function () use ($page): LengthAwarePaginator {
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($page): LengthAwarePaginator {
             return Campaign::query()->latest()->paginate(self::PER_PAGE, ['*'], 'page', $page);
         });
     }
@@ -66,7 +65,7 @@ class CampaignRepository implements CampaignRepositoryInterface
     {
         $cacheKey = "campaigns:status:{$status}:v2:page:{$page}";
 
-        return Cache::flexible($cacheKey, [self::CACHE_TTL, self::CACHE_TTL + self::CACHE_STALE_TTL], function () use ($status, $page): LengthAwarePaginator {
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($status, $page): LengthAwarePaginator {
             return Campaign::query()
                 ->where('status', $status)
                 ->latest()
