@@ -16,25 +16,33 @@ class CampaignController extends Controller
     ) {
     }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $campaigns = $this->campaignRepository->getAll();
+        $perPage = (int) $request->query('per_page', 15);
+        $perPage = max(1, min($perPage, 100)); // batasi antara 1–100
+
+        $campaigns = $this->campaignRepository->getAll($perPage);
 
         return response()->json($campaigns);
     }
 
     public function show(Campaign $campaign): JsonResponse
     {
+        // Sertakan total_donations langsung di response show
+        $campaign->total_donations = (int) \DB::table('donation_totals')
+            ->where('campaign_id', $campaign->id)
+            ->value('total_amount') ?? 0;
+
         return response()->json($campaign);
     }
 
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'title'         => ['required', 'string', 'max:255'],
+            'description'   => ['nullable', 'string'],
             'target_amount' => ['required', 'numeric', 'min:0'],
-            'status' => ['nullable', Rule::in(['aktif', 'selesai'])],
+            'status'        => ['nullable', Rule::in(['aktif', 'selesai'])],
         ]);
 
         if (array_key_exists('status', $validated) && $validated['status'] === null) {
@@ -49,10 +57,10 @@ class CampaignController extends Controller
     public function update(Request $request, Campaign $campaign): JsonResponse
     {
         $validated = $request->validate([
-            'title' => ['sometimes', 'required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'title'         => ['sometimes', 'required', 'string', 'max:255'],
+            'description'   => ['nullable', 'string'],
             'target_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
-            'status' => ['sometimes', Rule::in(['aktif', 'selesai'])],
+            'status'        => ['sometimes', Rule::in(['aktif', 'selesai'])],
         ]);
 
         $this->campaignRepository->update($campaign, $validated);
@@ -80,7 +88,7 @@ class CampaignController extends Controller
         return response()->json($campaign->fresh());
     }
 
-    public function getByStatus(string $status): JsonResponse
+    public function getByStatus(Request $request, string $status): JsonResponse
     {
         if (! in_array($status, ['aktif', 'selesai'], true)) {
             return response()->json([
@@ -88,7 +96,10 @@ class CampaignController extends Controller
             ], 422);
         }
 
-        $campaigns = $this->campaignRepository->getByStatus($status);
+        $perPage = (int) $request->query('per_page', 15);
+        $perPage = max(1, min($perPage, 100));
+
+        $campaigns = $this->campaignRepository->getByStatus($status, $perPage);
 
         return response()->json($campaigns);
     }

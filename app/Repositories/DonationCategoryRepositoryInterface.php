@@ -3,11 +3,11 @@
 namespace App\Repositories;
 
 use App\Models\DonationCategory;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface DonationCategoryRepositoryInterface
 {
-    public function getAll(): Collection;
+    public function getAll(int $page = 1): LengthAwarePaginator;
 
     public function create(array $data): DonationCategory;
 

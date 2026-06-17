@@ -1,0 +1,15 @@
+# Use this workspace to collaborate
+workspace:
+  id: ""
+
+localResources:
+  collections:
+    - ..\Team-13-Crowdfunding.postman_collection.json
+  environments:
+    - ..\Team-13-Local.postman_environment.json
+
+# Each entry here maps a local resource to one or more corresponding objects in Postman Cloud
+
+cloudResources:
+  collections:
+    ..\postman\collections\Team 13 Crowdfunding API: e5d76356-7484-4b95-ae62-cec6748387c7

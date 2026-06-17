@@ -1,0 +1,26 @@
+name: Team 13 Local
+values:
+  - key: base_url
+    enabled: true
+    value: 'http://localhost:8000'
+  - key: token
+    enabled: true
+    value: ''
+  - key: campaign_id
+    enabled: true
+    value: '1'
+  - key: donation_id
+    enabled: true
+    value: '1'
+  - key: category_id
+    enabled: true
+    value: '1'
+  - key: idempotency_key
+    enabled: true
+    value: ''
+  - key: test_email
+    enabled: true
+    value: personal@test.local
+  - key: test_password
+    enabled: true
+    value: Test12345!
