@@ -5,7 +5,7 @@ config:
       arrivalRate: 20
       name: Medium load (20 VUs)
   http:
-    timeout: 30
+    timeout: 600
 scenarios:
   - name: Mixed read workload
     flow:

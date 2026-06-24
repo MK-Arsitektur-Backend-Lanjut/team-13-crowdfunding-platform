@@ -97,6 +97,13 @@ class CampaignRepository implements CampaignRepositoryInterface
         return $result;
     }
 
+    public function getAllActive()
+    {
+        return Cache::remember('campaigns.active', 60, function () {
+            return Campaign::where('status', 'aktif')->get();
+        });
+    }
+
     /**
      * Serialize a paginator result into a plain array safe for Redis storage.
      * Avoids storing PHP objects (which cause __PHP_Incomplete_Class on unserialize).

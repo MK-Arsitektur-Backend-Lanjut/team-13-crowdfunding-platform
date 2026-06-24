@@ -18,4 +18,6 @@ interface CampaignRepositoryInterface
     public function updateStatus(Campaign $campaign, string $status): bool;
 
     public function getByStatus(string $status, int $perPage = 15): LengthAwarePaginator;
+
+    public function getAllActive();
 }

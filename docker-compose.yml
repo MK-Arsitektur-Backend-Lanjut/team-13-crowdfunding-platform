@@ -9,10 +9,25 @@ services:
       - .:/var/www/html
     expose:
       - "9000"
-    # php-fpm listens on 9000 by default inside container
     depends_on:
       - mysql
       - redis
+    mem_limit: "8g"
+    cpus: "8.0"
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: crowdfunding_worker
+    working_dir: /var/www/html
+    command: php artisan queue:work --daemon
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - mysql
+      - redis
+      - app
 
   nginx:
     image: nginx:alpine
@@ -28,6 +43,10 @@ services:
 
   mysql:
     image: mysql:8
+    command:
+      - mysqld
+      - --max-connections=800
+      - --innodb-buffer-pool-size=4G
     container_name: crowdfunding_db
     restart: always
     environment:
