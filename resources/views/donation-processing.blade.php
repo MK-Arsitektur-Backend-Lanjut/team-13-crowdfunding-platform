@@ -165,6 +165,11 @@
             transition: border-color 180ms, box-shadow 180ms, transform 180ms;
         }
 
+        .field select option {
+            background-color: #1b263b;
+            color: #f4f7fb;
+        }
+
         .field textarea {
             min-height: 86px;
             resize: vertical;
@@ -701,9 +706,12 @@
                 const allData = await allResponse.json();
                 const activeData = await activeResponse.json();
 
-                campaignCountAll.textContent = String(Array.isArray(allData) ? allData.length : 0);
-                campaignCountActive.textContent = String(Array.isArray(activeData) ? activeData.length : 0);
-                applyActiveCampaignOptions(activeData);
+                const allList = Array.isArray(allData) ? allData : (allData && Array.isArray(allData.data) ? allData.data : []);
+                const activeList = Array.isArray(activeData) ? activeData : (activeData && Array.isArray(activeData.data) ? activeData.data : []);
+
+                campaignCountAll.textContent = String(allList.length);
+                campaignCountActive.textContent = String(activeList.length);
+                applyActiveCampaignOptions(activeList);
             } catch (error) {
                 campaignCountAll.textContent = "-";
                 campaignCountActive.textContent = "-";
