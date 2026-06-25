@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'jwt.auth' => JwtAuthenticate::class,
             'admin' => EnsureAdmin::class,
         ]);
+
+        $middleware->api(prepend: [
+            'throttle:60,1',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
