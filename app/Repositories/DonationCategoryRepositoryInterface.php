@@ -9,6 +9,8 @@ interface DonationCategoryRepositoryInterface
 {
     public function getAll(int $page = 1): LengthAwarePaginator;
 
+    public function findById(int $id): ?DonationCategory;
+
     public function create(array $data): DonationCategory;
 
     public function update(DonationCategory $category, array $data): bool;
