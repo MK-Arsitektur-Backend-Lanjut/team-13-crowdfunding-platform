@@ -30,13 +30,9 @@ class CampaignController extends Controller
 
     public function show(int $campaign): JsonResponse
     {
-        $campaignModel = $this->campaignRepository->findById($campaign);
-
-        if ($campaignModel === null) {
-            return response()->json(['message' => 'Kampanye tidak ditemukan.'], 404);
-        }
-
-        return response()->json($campaignModel);
+        return response()->json(
+            $this->campaignRepository->findWithTotalDonations($campaign)
+        );
     }
 
     public function store(Request $request): JsonResponse

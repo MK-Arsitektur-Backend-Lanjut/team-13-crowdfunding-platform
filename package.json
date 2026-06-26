@@ -15,6 +15,10 @@
         "stress:campaign:medium:full": "npm run stress:warmup && npm run stress:campaign:medium",
         "stress:campaign:read": "npx artillery run stress-test/artillery/campaign-read-heavy.yml",
         "stress:campaign": "npm run stress:campaign:quick && npm run stress:campaign:medium && npm run stress:campaign:read"
+        "stress:stats": "npx artillery run stress-test/artillery/stats-progressive.yml",
+        "stress:campaign": "npx artillery run stress-test/artillery/campaign-progressive.yml",
+        "stress:campaign:read": "npx artillery run stress-test/artillery/campaign-read.yml",
+        "stress:campaign:create": "npx artillery run stress-test/artillery/campaign-create.yml"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

@@ -19,9 +19,10 @@ interface CampaignRepositoryInterface
 
     public function getByStatus(string $status, int $perPage = 15): LengthAwarePaginator;
 
-    public function findById(int $id): ?Campaign;
-
-    public function invalidateCache(): void;
+    /**
+     * @return array<string, mixed>
+     */
+    public function findWithTotalDonations(int $id): array;
 
     public function getAllActive();
 }

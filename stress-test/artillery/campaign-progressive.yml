@@ -1,0 +1,53 @@
+config:
+  target: "http://localhost:8000"
+
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm Up"
+
+    - duration: 60
+      arrivalRate: 20
+      name: "20 RPS"
+
+    - duration: 60
+      arrivalRate: 50
+      name: "50 RPS"
+
+    - duration: 60
+      arrivalRate: 100
+      name: "100 RPS"
+
+    - duration: 60
+      arrivalRate: 200
+      name: "200 RPS"
+
+  http:
+    timeout: 10
+    pool: 64
+
+  ensure:
+    maxErrorRate: 1
+    p95: 500
+    p99: 1000
+
+scenarios:
+  - name: Campaign List Read
+    weight: 70
+    flow:
+      - get:
+          url: "/api/campaigns?page=1&per_page=15"
+          headers:
+            Accept: application/json
+          expect:
+            - statusCode: 200
+
+  - name: Campaign Filter By Status
+    weight: 30
+    flow:
+      - get:
+          url: "/api/campaigns/status/aktif?page=1&per_page=15"
+          headers:
+            Accept: application/json
+          expect:
+            - statusCode: 200
