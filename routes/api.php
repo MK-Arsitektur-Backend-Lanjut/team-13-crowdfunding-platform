@@ -22,16 +22,20 @@ Route::post('/auth/verify/{id}', [AuthController::class, 'verify'])->middleware(
 | CAMPAIGN ROUTES
 |--------------------------------------------------------------------------
 */
-Route::prefix('campaigns')->middleware('throttle:1000,1')->group(function (): void {
-    Route::get('/', [CampaignController::class, 'index']);
-    Route::get('/status/{status}', [CampaignController::class, 'getByStatus']);
-    Route::post('/', [CampaignController::class, 'store']);
+Route::prefix('campaigns')->group(function (): void {
+    Route::middleware('throttle:12000,1')->group(function (): void {
+        Route::get('/', [CampaignController::class, 'index']);
+        Route::get('/status/{status}', [CampaignController::class, 'getByStatus']);
+        Route::get('/{campaign}/donations/total', [DonationController::class, 'campaignTotal']);
+        Route::get('/{campaign}', [CampaignController::class, 'show']);
+    });
 
-    Route::get('/{campaign}/donations/total', [DonationController::class, 'campaignTotal']);
-    Route::get('/{campaign}', [CampaignController::class, 'show']);
-    Route::put('/{campaign}', [CampaignController::class, 'update']);
-    Route::delete('/{campaign}', [CampaignController::class, 'destroy']);
-    Route::patch('/{campaign}/status', [CampaignController::class, 'updateStatus']);
+    Route::middleware('throttle:1000,1')->group(function (): void {
+        Route::post('/', [CampaignController::class, 'store']);
+        Route::put('/{campaign}', [CampaignController::class, 'update']);
+        Route::delete('/{campaign}', [CampaignController::class, 'destroy']);
+        Route::patch('/{campaign}/status', [CampaignController::class, 'updateStatus']);
+    });
 });
 
 /*

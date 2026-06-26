@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Campaign;
 use App\Repositories\CampaignRepositoryInterface;
+use App\Services\DonationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -12,28 +13,30 @@ use Illuminate\Validation\Rule;
 class CampaignController extends Controller
 {
     public function __construct(
-        private readonly CampaignRepositoryInterface $campaignRepository
+        private readonly CampaignRepositoryInterface $campaignRepository,
+        private readonly DonationService $donationService,
     ) {
     }
 
     public function index(Request $request): JsonResponse
     {
         $perPage = (int) $request->query('per_page', 15);
-        $perPage = max(1, min($perPage, 100)); // batasi antara 1–100
+        $perPage = max(1, min($perPage, 100));
 
         $campaigns = $this->campaignRepository->getAll($perPage);
 
         return response()->json($campaigns);
     }
 
-    public function show(Campaign $campaign): JsonResponse
+    public function show(int $campaign): JsonResponse
     {
-        // Sertakan total_donations langsung di response show
-        $campaign->total_donations = (int) \DB::table('donation_totals')
-            ->where('campaign_id', $campaign->id)
-            ->value('total_amount') ?? 0;
+        $campaignModel = $this->campaignRepository->findById($campaign);
 
-        return response()->json($campaign);
+        if ($campaignModel === null) {
+            return response()->json(['message' => 'Kampanye tidak ditemukan.'], 404);
+        }
+
+        return response()->json($campaignModel);
     }
 
     public function store(Request $request): JsonResponse
@@ -51,7 +54,7 @@ class CampaignController extends Controller
 
         $campaign = $this->campaignRepository->create($validated);
 
-        return response()->json($campaign, 201);
+        return response()->json($this->enrichWithTotal($campaign), 201);
     }
 
     public function update(Request $request, Campaign $campaign): JsonResponse
@@ -65,7 +68,7 @@ class CampaignController extends Controller
 
         $this->campaignRepository->update($campaign, $validated);
 
-        return response()->json($campaign->fresh());
+        return response()->json($this->enrichWithTotal($campaign->fresh()));
     }
 
     public function destroy(Campaign $campaign): JsonResponse
@@ -85,7 +88,14 @@ class CampaignController extends Controller
 
         $this->campaignRepository->updateStatus($campaign, $validated['status']);
 
-        return response()->json($campaign->fresh());
+        return response()->json($this->enrichWithTotal($campaign->fresh()));
+    }
+
+    private function enrichWithTotal(Campaign $campaign): Campaign
+    {
+        $campaign->total_donations = $this->donationService->getCampaignTotal($campaign->id);
+
+        return $campaign;
     }
 
     public function getByStatus(Request $request, string $status): JsonResponse

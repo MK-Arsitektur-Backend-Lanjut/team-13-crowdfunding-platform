@@ -7,6 +7,7 @@ function randomInt(min, max) {
 module.exports = {
   setDynamicDonationPayload,
   setAuthPayload,
+  setCampaignReadVars,
 };
 
 function setDynamicDonationPayload(userContext, events, done) {
@@ -29,5 +30,17 @@ function setDynamicDonationPayload(userContext, events, done) {
 function setAuthPayload(userContext, events, done) {
   userContext.vars.test_email = process.env.STRESS_USER_EMAIL || 'personal@test.local';
   userContext.vars.test_password = process.env.STRESS_USER_PASSWORD || 'Test12345!';
+  return done();
+}
+
+function setCampaignReadVars(userContext, events, done) {
+  const maxPage = Number(process.env.STRESS_CAMPAIGN_MAX_PAGE || 1333);
+  const statusMaxPage = Number(process.env.STRESS_CAMPAIGN_STATUS_MAX_PAGE || 933);
+  const maxCampaignId = Number(process.env.STRESS_CAMPAIGN_MAX_ID || 20000);
+
+  userContext.vars.campaign_page = randomInt(1, maxPage);
+  userContext.vars.campaign_status_page = randomInt(1, statusMaxPage);
+  userContext.vars.campaign_id = randomInt(1, maxCampaignId);
+
   return done();
 }

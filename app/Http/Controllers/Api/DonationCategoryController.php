@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\DonationCategory;
 use App\Repositories\DonationCategoryRepositoryInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,8 +30,14 @@ class DonationCategoryController extends Controller
         ]);
     }
 
-    public function show(DonationCategory $category): JsonResponse
+    public function show(int $id): JsonResponse
     {
+        $category = $this->categoryRepository->findById($id);
+
+        if ($category === null) {
+            return response()->json(['message' => 'Kategori tidak ditemukan.'], 404);
+        }
+
         return response()->json($category);
     }
 
@@ -48,8 +53,14 @@ class DonationCategoryController extends Controller
         return response()->json($category, 201);
     }
 
-    public function update(Request $request, DonationCategory $category): JsonResponse
+    public function update(Request $request, int $id): JsonResponse
     {
+        $category = $this->categoryRepository->findById($id);
+
+        if ($category === null) {
+            return response()->json(['message' => 'Kategori tidak ditemukan.'], 404);
+        }
+
         $validated = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
@@ -57,11 +68,17 @@ class DonationCategoryController extends Controller
 
         $this->categoryRepository->update($category, $validated);
 
-        return response()->json($category->fresh());
+        return response()->json($this->categoryRepository->findById($id));
     }
 
-    public function destroy(DonationCategory $category): JsonResponse
+    public function destroy(int $id): JsonResponse
     {
+        $category = $this->categoryRepository->findById($id);
+
+        if ($category === null) {
+            return response()->json(['message' => 'Kategori tidak ditemukan.'], 404);
+        }
+
         $this->categoryRepository->delete($category);
 
         return response()->json([
