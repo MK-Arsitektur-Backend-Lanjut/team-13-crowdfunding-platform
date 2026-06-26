@@ -9,8 +9,8 @@ RUN apt-get update \
 
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 
-# Copy custom PHP-FPM pool configuration for better concurrency
 COPY docker/php/8.4/www.conf /usr/local/etc/php-fpm.d/www.conf
+COPY docker/php/8.4/performance.ini /usr/local/etc/php/conf.d/99-performance.ini
 
 WORKDIR /var/www/html
 

@@ -4,13 +4,15 @@ namespace App\Services;
 
 use App\Contracts\Repositories\DonationRepositoryInterface;
 use App\Models\Donation;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class DonationService
 {
-    public function __construct(private readonly DonationRepositoryInterface $donationRepository)
-    {
+    public function __construct(
+        private readonly DonationRepositoryInterface $donationRepository,
+        private readonly DonationStatsService $donationStatsService,
+    ) {
     }
 
     /**
@@ -20,10 +22,9 @@ class DonationService
     {
         $campaignId = (int) $payload['campaign_id'];
         $amount = (int) $payload['amount'];
+        $userId = isset($payload['user_id']) ? (int) $payload['user_id'] : null;
 
-        // Use a single transaction for both donation creation and total increment
-        // to ensure data consistency. The UPSERT is atomic and won't cause long locks.
-        $donation = DB::transaction(function () use ($payload, $idempotencyKey, $campaignId, $amount): Donation {
+        $donation = DB::transaction(function () use ($payload, $idempotencyKey, $campaignId, $amount, $userId): Donation {
             if ($idempotencyKey !== null && $idempotencyKey !== '') {
                 $existing = $this->donationRepository->findByIdempotencyKey($idempotencyKey);
 
@@ -35,7 +36,7 @@ class DonationService
             $isAnonymous = (bool) ($payload['is_anonymous'] ?? false);
 
             $donation = $this->donationRepository->create([
-                'user_id' => $payload['user_id'] ?? null,
+                'user_id' => $userId,
                 'campaign_id' => $campaignId,
                 'amount' => $amount,
                 'status' => 'success',
@@ -45,15 +46,13 @@ class DonationService
                 'idempotency_key' => $idempotencyKey,
             ]);
 
-            // Increment total inside the same transaction for consistency
             $this->donationRepository->incrementCampaignTotal($campaignId, $amount);
+            $this->donationStatsService->recordSuccessfulDonation($userId);
 
             return $donation;
         });
 
-        // Cache invalidation remains outside transaction
         Cache::forget($this->campaignTotalCacheKey($campaignId));
-        Cache::forget('donation:stats:v2');
 
         return $donation;
     }

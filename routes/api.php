@@ -22,7 +22,7 @@ Route::post('/auth/verify/{id}', [AuthController::class, 'verify'])->middleware(
 | CAMPAIGN ROUTES
 |--------------------------------------------------------------------------
 */
-Route::prefix('campaigns')->middleware('throttle:100,1')->group(function (): void {
+Route::prefix('campaigns')->middleware('throttle:1000,1')->group(function (): void {
     Route::get('/', [CampaignController::class, 'index']);
     Route::get('/status/{status}', [CampaignController::class, 'getByStatus']);
     Route::post('/', [CampaignController::class, 'store']);
@@ -52,8 +52,11 @@ Route::prefix('donation-categories')->group(function (): void {
 | DONATION ROUTES
 |--------------------------------------------------------------------------
 */
-Route::post('/donations', [DonationController::class, 'store']);
 Route::get('/donations/stats', [DonationController::class, 'stats']);
+
+Route::middleware('throttle:1000,1')->group(function () {
+    Route::post('/donations', [DonationController::class, 'store']);
+});
 
 Route::prefix('donations')->middleware('jwt.auth')->group(function () {
     Route::get('/history', [DonationController::class, 'history']);

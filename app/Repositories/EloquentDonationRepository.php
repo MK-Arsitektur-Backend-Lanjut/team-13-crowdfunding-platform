@@ -36,15 +36,12 @@ class EloquentDonationRepository implements DonationRepositoryInterface
                 [$campaignId, $amount, $amount]
             );
         } catch (\Throwable $e) {
-            // Log the error and attempt a retry once for deadlock resolution
-            \Illuminate\Support\Facades\Log::warning('Failed to increment campaign total, retrying...', [
+            \Illuminate\Support\Facades\Log::warning('Failed to increment campaign total, retrying once', [
                 'campaign_id' => $campaignId,
                 'amount' => $amount,
                 'error' => $e->getMessage(),
             ]);
 
-            // Retry once after a short delay
-            usleep(100000); // 100ms delay
             DB::affectingStatement(
                 'INSERT INTO donation_totals (campaign_id, total_amount, created_at, updated_at) 
                  VALUES (?, ?, NOW(), NOW())

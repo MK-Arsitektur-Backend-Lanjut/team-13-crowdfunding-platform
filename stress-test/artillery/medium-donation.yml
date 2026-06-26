@@ -1,0 +1,13 @@
+config:
+  target: "http://localhost:8000"
+  http:
+    timeout: 30
+
+  phases:
+    - duration: 1
+      arrivalCount: 1
+
+scenarios:
+  - flow:
+      - get:
+          url: "/api/donations/stats"
