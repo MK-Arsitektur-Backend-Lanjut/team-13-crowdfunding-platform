@@ -1,17 +1,25 @@
+# Menguji: GET /api/campaigns, GET /api/campaigns/status/aktif, GET /api/donation-categories
 config:
   target: "http://localhost:8000"
   phases:
     - duration: 120
       arrivalRate: 20
-      name: Medium load (20 VUs)
+      name: Medium load (20 VU/s)
   http:
-    timeout: 600
+    timeout: 60
+
 scenarios:
   - name: Mixed read workload
     flow:
       - get:
-          url: "/api/campaigns?page=1"
+          url: "/api/campaigns?page=1&per_page=15"
+          headers:
+            Accept: "application/json"
       - get:
-          url: "/api/campaigns/status/aktif?page=1"
+          url: "/api/campaigns/status/aktif?page=1&per_page=15"
+          headers:
+            Accept: "application/json"
       - get:
           url: "/api/donation-categories"
+          headers:
+            Accept: "application/json"

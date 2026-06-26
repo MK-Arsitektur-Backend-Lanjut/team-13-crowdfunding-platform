@@ -3,11 +3,14 @@
 namespace App\Repositories;
 
 use App\Models\Campaign;
+use App\Support\CachesPaginatedList;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 
 class CampaignRepository implements CampaignRepositoryInterface
 {
+    use CachesPaginatedList;
+
     private const CACHE_TTL = 300;
     private const VERSION_KEY = 'campaigns:cache_version';
 
@@ -17,7 +20,7 @@ class CampaignRepository implements CampaignRepositoryInterface
         $version = (int) Cache::get(self::VERSION_KEY, 1);
         $cacheKey = "campaigns:all:v{$version}:page:{$page}:per{$perPage}";
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($perPage): LengthAwarePaginator {
+        return $this->rememberPaginated($cacheKey, self::CACHE_TTL, function () use ($perPage): LengthAwarePaginator {
             return Campaign::query()
                 ->leftJoin('donation_totals', 'campaigns.id', '=', 'donation_totals.campaign_id')
                 ->select('campaigns.*', 'donation_totals.total_amount as total_donations')
@@ -73,7 +76,7 @@ class CampaignRepository implements CampaignRepositoryInterface
         $version = (int) Cache::get(self::VERSION_KEY, 1);
         $cacheKey = "campaigns:status:{$status}:v{$version}:page:{$page}:per{$perPage}";
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($status, $perPage): LengthAwarePaginator {
+        return $this->rememberPaginated($cacheKey, self::CACHE_TTL, function () use ($status, $perPage): LengthAwarePaginator {
             return Campaign::query()
                 ->leftJoin('donation_totals', 'campaigns.id', '=', 'donation_totals.campaign_id')
                 ->select('campaigns.*', 'donation_totals.total_amount as total_donations')
@@ -83,8 +86,32 @@ class CampaignRepository implements CampaignRepositoryInterface
         });
     }
 
-    private function forgetCache(): void
+    public function findById(int $id): ?Campaign
+    {
+        $version = (int) Cache::get(self::VERSION_KEY, 1);
+        $cacheKey = "campaigns:single:{$id}:v{$version}";
+
+        return $this->rememberModel($cacheKey, self::CACHE_TTL, function () use ($id): ?Campaign {
+            return Campaign::query()
+                ->leftJoin('donation_totals', 'campaigns.id', '=', 'donation_totals.campaign_id')
+                ->select('campaigns.*', 'donation_totals.total_amount as total_donations')
+                ->where('campaigns.id', $id)
+                ->first();
+        }, Campaign::class);
+    }
+
+    public function invalidateCache(): void
     {
         Cache::increment(self::VERSION_KEY);
+    }
+
+    public function getAllActive(): LengthAwarePaginator
+    {
+        return $this->getByStatus('aktif');
+    }
+
+    private function forgetCache(): void
+    {
+        $this->invalidateCache();
     }
 }

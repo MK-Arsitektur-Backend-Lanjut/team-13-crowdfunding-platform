@@ -28,9 +28,15 @@ class CampaignController extends Controller
         return response()->json($campaigns);
     }
 
-    public function show(Campaign $campaign): JsonResponse
+    public function show(int $campaign): JsonResponse
     {
-        return response()->json($this->enrichWithTotal($campaign));
+        $campaignModel = $this->campaignRepository->findById($campaign);
+
+        if ($campaignModel === null) {
+            return response()->json(['message' => 'Kampanye tidak ditemukan.'], 404);
+        }
+
+        return response()->json($campaignModel);
     }
 
     public function store(Request $request): JsonResponse

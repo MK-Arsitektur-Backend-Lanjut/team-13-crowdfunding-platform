@@ -1,0 +1,12 @@
+{
+    "typescript.disableAutomaticTypeAcquisition": true,
+    "terminal.integrated.env.windows": {
+        "npm_config_cache": "${env:LOCALAPPDATA}\\npm-cache"
+    },
+    "terminal.integrated.env.osx": {
+        "npm_config_cache": "${env:HOME}/.npm"
+    },
+    "terminal.integrated.env.linux": {
+        "npm_config_cache": "${env:HOME}/.npm"
+    }
+}

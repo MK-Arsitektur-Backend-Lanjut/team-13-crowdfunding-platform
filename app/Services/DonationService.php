@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\Repositories\DonationRepositoryInterface;
 use App\Models\Donation;
+use App\Repositories\CampaignRepositoryInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -12,6 +13,7 @@ class DonationService
     public function __construct(
         private readonly DonationRepositoryInterface $donationRepository,
         private readonly DonationStatsService $donationStatsService,
+        private readonly CampaignRepositoryInterface $campaignRepository,
     ) {
     }
 
@@ -53,6 +55,7 @@ class DonationService
         });
 
         Cache::forget($this->campaignTotalCacheKey($campaignId));
+        $this->campaignRepository->invalidateCache();
 
         return $donation;
     }

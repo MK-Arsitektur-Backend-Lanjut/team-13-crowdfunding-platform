@@ -1,0 +1,54 @@
+config:
+  target: "http://localhost:8000"
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      name: Warm up
+    - duration: 180
+      arrivalRate: 30
+      name: Sustained read load
+    - duration: 120
+      arrivalRate: 50
+      name: Peak read load
+    - duration: 60
+      arrivalRate: 100
+      name: Breaking read load (opsional — Ctrl+C jika error banyak)
+  processor: "./processor.cjs"
+  http:
+    timeout: 30
+
+scenarios:
+  - name: Campaign list (random page)
+    weight: 50
+    flow:
+      - function: setCampaignReadVars
+      - get:
+          url: "/api/campaigns?page={{ campaign_page }}&per_page=15"
+          headers:
+            Accept: "application/json"
+
+  - name: Campaign filter by status aktif
+    weight: 30
+    flow:
+      - function: setCampaignReadVars
+      - get:
+          url: "/api/campaigns/status/aktif?page={{ campaign_status_page }}&per_page=15"
+          headers:
+            Accept: "application/json"
+
+  - name: Campaign detail
+    weight: 15
+    flow:
+      - function: setCampaignReadVars
+      - get:
+          url: "/api/campaigns/{{ campaign_id }}"
+          headers:
+            Accept: "application/json"
+
+  - name: Donation categories
+    weight: 5
+    flow:
+      - get:
+          url: "/api/donation-categories"
+          headers:
+            Accept: "application/json"

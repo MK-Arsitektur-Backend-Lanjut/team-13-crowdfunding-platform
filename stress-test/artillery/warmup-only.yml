@@ -5,7 +5,7 @@ config:
       arrivalRate: 1
       name: Cache warmup
   http:
-    timeout: 30
+    timeout: 60
 scenarios:
   - name: Warmup caches
     flow:
