@@ -26,14 +26,11 @@ class CampaignController extends Controller
         return response()->json($campaigns);
     }
 
-    public function show(Campaign $campaign): JsonResponse
+    public function show(int $campaign): JsonResponse
     {
-        // Sertakan total_donations langsung di response show
-        $campaign->total_donations = (int) \DB::table('donation_totals')
-            ->where('campaign_id', $campaign->id)
-            ->value('total_amount') ?? 0;
-
-        return response()->json($campaign);
+        return response()->json(
+            $this->campaignRepository->findWithTotalDonations($campaign)
+        );
     }
 
     public function store(Request $request): JsonResponse

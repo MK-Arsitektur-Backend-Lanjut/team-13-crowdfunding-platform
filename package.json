@@ -9,7 +9,10 @@
         "stress:write": "npx artillery run stress-test/artillery/write-heavy.yml",
         "stress:mixed": "npx artillery run stress-test/artillery/mixed-70r-30w.yml",
         "stress:quick": "npx artillery quick --count 20 --num 25 http://localhost:8000/api/campaigns",
-        "stress:stats": "npx artillery run stress-test/artillery/stats-progressive.yml"
+        "stress:stats": "npx artillery run stress-test/artillery/stats-progressive.yml",
+        "stress:campaign": "npx artillery run stress-test/artillery/campaign-progressive.yml",
+        "stress:campaign:read": "npx artillery run stress-test/artillery/campaign-read.yml",
+        "stress:campaign:create": "npx artillery run stress-test/artillery/campaign-create.yml"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

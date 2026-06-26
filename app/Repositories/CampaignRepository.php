@@ -3,35 +3,70 @@
 namespace App\Repositories;
 
 use App\Models\Campaign;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator as ConcretePaginator;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Pagination\Paginator;
 
 class CampaignRepository implements CampaignRepositoryInterface
 {
-    private const CACHE_TTL = 300; // 5 minutes
+    private const CACHE_TTL = 300;
+
+    private const CACHE_VERSION = 'v4';
+
+    private const LOCK_SECONDS = 10;
+
+    private const LOCK_WAIT_SECONDS = 1;
+
+    /** @var list<string> */
+    private const LIST_COLUMNS = [
+        'campaigns.id',
+        'campaigns.title',
+        'campaigns.description',
+        'campaigns.target_amount',
+        'campaigns.status',
+        'campaigns.created_at',
+        'campaigns.updated_at',
+        'donation_totals.total_amount as total_donations',
+    ];
 
     public function getAll(int $perPage = 15): LengthAwarePaginator
     {
-        $page = Paginator::resolveCurrentPage();
-        $cacheKey = "campaigns:all:v3:per_page:{$perPage}:page:{$page}";
+        return $this->paginateCampaigns(null, $perPage);
+    }
+
+    public function getByStatus(string $status, int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->paginateCampaigns($status, $perPage);
+    }
+
+    public function findWithTotalDonations(int $id): array
+    {
+        $cacheKey = 'campaigns:show:'.self::CACHE_VERSION.":{$id}";
 
         $cached = $this->getFromCache($cacheKey);
         if ($cached !== null) {
-            return $this->hydratePaginator($cached, $perPage, $page);
+            return $cached;
         }
 
-        $result = Campaign::query()
-            ->leftJoin('donation_totals', 'campaigns.id', '=', 'donation_totals.campaign_id')
-            ->select('campaigns.*', 'donation_totals.total_amount as total_donations')
-            ->latest('campaigns.created_at')
-            ->paginate($perPage);
+        return $this->rememberLocked($cacheKey, function () use ($id) {
+            $campaign = $this->listQuery()
+                ->where('campaigns.id', $id)
+                ->first();
 
-        $this->putToCache($cacheKey, $this->serializePaginator($result));
+            if ($campaign === null) {
+                throw (new ModelNotFoundException())->setModel(Campaign::class, [$id]);
+            }
 
-        return $result;
+            $payload = $campaign->toArray();
+            $payload['total_donations'] = (int) ($payload['total_donations'] ?? 0);
+
+            return $payload;
+        });
     }
 
     public function create(array $data): Campaign
@@ -75,84 +110,123 @@ class CampaignRepository implements CampaignRepositoryInterface
         return $updated;
     }
 
-    public function getByStatus(string $status, int $perPage = 15): LengthAwarePaginator
+    public function getAllActive()
+    {
+        return Cache::remember('campaigns.active', 60, function () {
+            return Campaign::query()
+                ->select([
+                    'id',
+                    'title',
+                    'description',
+                    'target_amount',
+                    'status',
+                    'created_at',
+                    'updated_at',
+                ])
+                ->where('status', 'aktif')
+                ->get();
+        });
+    }
+
+    private function paginateCampaigns(?string $status, int $perPage): LengthAwarePaginator
     {
         $page = Paginator::resolveCurrentPage();
-        $cacheKey = "campaigns:status:{$status}:v3:per_page:{$perPage}:page:{$page}";
+        $statusKey = $status ?? 'all';
+        $cacheKey = 'campaigns:'.$statusKey.':'.self::CACHE_VERSION.":per_page:{$perPage}:page:{$page}";
 
         $cached = $this->getFromCache($cacheKey);
         if ($cached !== null) {
             return $this->hydratePaginator($cached, $perPage, $page);
         }
 
-        $result = Campaign::query()
-            ->leftJoin('donation_totals', 'campaigns.id', '=', 'donation_totals.campaign_id')
-            ->select('campaigns.*', 'donation_totals.total_amount as total_donations')
-            ->where('campaigns.status', $status)
-            ->latest('campaigns.created_at')
-            ->paginate($perPage);
+        $cached = $this->rememberLocked($cacheKey, function () use ($status, $perPage, $page) {
+            $query = $this->listQuery();
 
-        $this->putToCache($cacheKey, $this->serializePaginator($result));
+            if ($status !== null) {
+                $query->where('campaigns.status', $status);
+            }
 
-        return $result;
+            $items = (clone $query)
+                ->latest('campaigns.created_at')
+                ->forPage($page, $perPage)
+                ->get();
+
+            $paginator = new ConcretePaginator(
+                $items,
+                $this->resolveTotalCount($status),
+                $perPage,
+                $page,
+                [
+                    'path' => Paginator::resolveCurrentPath(),
+                    'pageName' => 'page',
+                ]
+            );
+
+            return $this->serializePaginator($paginator);
+        });
+
+        return $this->hydratePaginator($cached, $perPage, $page);
     }
 
-    public function getAllActive()
+    private function listQuery(): Builder
     {
-        return Cache::remember('campaigns.active', 60, function () {
-            return Campaign::where('status', 'aktif')->get();
+        return Campaign::query()
+            ->leftJoin('donation_totals', 'campaigns.id', '=', 'donation_totals.campaign_id')
+            ->select(self::LIST_COLUMNS);
+    }
+
+    private function resolveTotalCount(?string $status): int
+    {
+        $cacheKey = $status === null
+            ? 'campaigns:count:'.self::CACHE_VERSION.':all'
+            : 'campaigns:count:'.self::CACHE_VERSION.":status:{$status}";
+
+        return (int) $this->rememberTagged($cacheKey, function () use ($status) {
+            $query = Campaign::query();
+
+            if ($status !== null) {
+                $query->where('status', $status);
+            }
+
+            return $query->count();
         });
     }
 
     /**
-     * Serialize a paginator result into a plain array safe for Redis storage.
-     * Avoids storing PHP objects (which cause __PHP_Incomplete_Class on unserialize).
+     * @return array{items: list<array<string, mixed>>, total: int, per_page: int, current_page: int, last_page: int, from: int|null, to: int|null}
      */
     private function serializePaginator(LengthAwarePaginator $paginator): array
     {
         return [
-            'items'        => collect($paginator->items())->map(fn($m) => $m->getAttributes())->all(),
-            'total'        => $paginator->total(),
-            'per_page'     => $paginator->perPage(),
+            'items' => collect($paginator->items())
+                ->map(fn (Campaign $model) => $model->toArray())
+                ->all(),
+            'total' => $paginator->total(),
+            'per_page' => $paginator->perPage(),
             'current_page' => $paginator->currentPage(),
-            'last_page'    => $paginator->lastPage(),
-            'from'         => $paginator->firstItem(),
-            'to'           => $paginator->lastItem(),
+            'last_page' => $paginator->lastPage(),
+            'from' => $paginator->firstItem(),
+            'to' => $paginator->lastItem(),
         ];
     }
 
     /**
-     * Rebuild a LengthAwarePaginator from a cached plain-array snapshot.
+     * @param array{items: list<array<string, mixed>>, total: int, per_page: int, current_page: int, last_page: int, from: int|null, to: int|null} $data
      */
     private function hydratePaginator(array $data, int $perPage, int $page): LengthAwarePaginator
     {
-        $items = Collection::make($data['items'])->map(function (array|object $item) {
-            if ($item instanceof Campaign) {
-                return $item;
-            }
-            $model = new Campaign();
-            $model->setRawAttributes(is_array($item) ? $item : (array) $item, true);
-            $model->exists = true;
-            return $model;
-        });
-
-        $paginator = new ConcretePaginator(
-            $items,
+        return new ConcretePaginator(
+            Collection::make($data['items']),
             $data['total'],
             $perPage,
             $page,
             [
-                'path'     => Paginator::resolveCurrentPath(),
+                'path' => Paginator::resolveCurrentPath(),
                 'pageName' => 'page',
             ]
         );
-
-        return $paginator;
     }
 
-    /**
-     * Read a plain-array snapshot from cache (tagged or fallback).
-     */
     private function getFromCache(string $key): ?array
     {
         try {
@@ -162,9 +236,6 @@ class CampaignRepository implements CampaignRepositoryInterface
         }
     }
 
-    /**
-     * Write a plain-array snapshot to cache (tagged or fallback).
-     */
     private function putToCache(string $key, array $data): void
     {
         try {
@@ -174,19 +245,108 @@ class CampaignRepository implements CampaignRepositoryInterface
         }
     }
 
+    /**
+     * @template TReturn
+     *
+     * @param  callable(): TReturn  $callback
+     * @return TReturn
+     */
+    private function rememberTagged(string $key, callable $callback)
+    {
+        $cached = $this->getTagged($key);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $compute = function () use ($key, $callback) {
+            $cached = $this->getTagged($key);
+            if ($cached !== null) {
+                return $cached;
+            }
+
+            $value = $callback();
+            $this->putTagged($key, $value);
+
+            return $value;
+        };
+
+        try {
+            return Cache::lock('lock:'.$key, self::LOCK_SECONDS)->block(
+                self::LOCK_WAIT_SECONDS,
+                $compute
+            );
+        } catch (LockTimeoutException) {
+            return $compute();
+        }
+    }
+
+    /**
+     * @param  callable(): array<string, mixed>  $callback
+     * @return array<string, mixed>
+     */
+    private function rememberLocked(string $key, callable $callback): array
+    {
+        $cached = $this->getFromCache($key);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $compute = function () use ($key, $callback): array {
+            $cached = $this->getFromCache($key);
+            if ($cached !== null) {
+                return $cached;
+            }
+
+            $value = $callback();
+            $this->putToCache($key, $value);
+
+            return $value;
+        };
+
+        try {
+            return Cache::lock('lock:'.$key, self::LOCK_SECONDS)->block(
+                self::LOCK_WAIT_SECONDS,
+                $compute
+            );
+        } catch (LockTimeoutException) {
+            return $compute();
+        }
+    }
+
+    private function getTagged(string $key): mixed
+    {
+        try {
+            return Cache::tags(['campaigns'])->get($key);
+        } catch (\BadMethodCallException) {
+            return Cache::get($key);
+        }
+    }
+
+    private function putTagged(string $key, mixed $value): void
+    {
+        try {
+            Cache::tags(['campaigns'])->put($key, $value, self::CACHE_TTL);
+        } catch (\BadMethodCallException) {
+            Cache::put($key, $value, self::CACHE_TTL);
+        }
+    }
+
     private function forgetCache(): void
     {
         try {
             Cache::tags(['campaigns'])->flush();
-        } catch (\BadMethodCallException $e) {
-            // Fallback clear for drivers that don't support tags
+        } catch (\BadMethodCallException) {
             for ($page = 1; $page <= 5; $page++) {
                 foreach ([15, 50, 100] as $pp) {
-                    Cache::forget("campaigns:all:v3:per_page:{$pp}:page:{$page}");
-                    Cache::forget("campaigns:status:aktif:v3:per_page:{$pp}:page:{$page}");
-                    Cache::forget("campaigns:status:selesai:v3:per_page:{$pp}:page:{$page}");
+                    Cache::forget('campaigns:all:'.self::CACHE_VERSION.":per_page:{$pp}:page:{$page}");
+                    Cache::forget('campaigns:aktif:'.self::CACHE_VERSION.":per_page:{$pp}:page:{$page}");
+                    Cache::forget('campaigns:selesai:'.self::CACHE_VERSION.":per_page:{$pp}:page:{$page}");
                 }
             }
+
+            Cache::forget('campaigns:count:'.self::CACHE_VERSION.':all');
+            Cache::forget('campaigns:count:'.self::CACHE_VERSION.':status:aktif');
+            Cache::forget('campaigns:count:'.self::CACHE_VERSION.':status:selesai');
         }
     }
 }

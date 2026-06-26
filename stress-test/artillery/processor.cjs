@@ -6,6 +6,7 @@ function randomInt(min, max) {
 
 module.exports = {
   setDynamicDonationPayload,
+  setDynamicCampaignPayload,
   setAuthPayload,
 };
 
@@ -22,6 +23,17 @@ function setDynamicDonationPayload(userContext, events, done) {
   userContext.vars.donor_name = isAnonymous
     ? 'Anonymous'
     : `LoadUser-${Math.random().toString(36).slice(2, 9)}`;
+
+  return done();
+}
+
+function setDynamicCampaignPayload(userContext, events, done) {
+  const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+
+  userContext.vars.campaign_title = `Stress Campaign ${suffix}`;
+  userContext.vars.campaign_description = `Load test campaign created at ${new Date().toISOString()}`;
+  userContext.vars.campaign_target_amount = randomInt(1_000_000, 500_000_000);
+  userContext.vars.campaign_status = Math.random() < 0.8 ? 'aktif' : 'selesai';
 
   return done();
 }

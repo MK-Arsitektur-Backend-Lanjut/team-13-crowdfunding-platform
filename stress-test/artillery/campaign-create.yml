@@ -1,0 +1,43 @@
+config:
+  target: "http://localhost:8000"
+
+  processor: "./processor.cjs"
+
+  phases:
+    - duration: 30
+      arrivalRate: 2
+      name: "Warm Up"
+
+    - duration: 60
+      arrivalRate: 10
+      name: "Sustained Write"
+
+    - duration: 60
+      arrivalRate: 20
+      name: "Peak Write"
+
+  http:
+    timeout: 20
+    pool: 32
+
+  ensure:
+    maxErrorRate: 1
+    p95: 500
+    p99: 1000
+
+scenarios:
+  - name: Campaign Create
+    flow:
+      - function: setDynamicCampaignPayload
+      - post:
+          url: "/api/campaigns"
+          headers:
+            Accept: application/json
+            Content-Type: application/json
+          json:
+            title: "{{ campaign_title }}"
+            description: "{{ campaign_description }}"
+            target_amount: "{{ campaign_target_amount }}"
+            status: "{{ campaign_status }}"
+          expect:
+            - statusCode: 201
