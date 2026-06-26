@@ -8,7 +8,8 @@
         "stress:read": "npx artillery run stress-test/artillery/read-heavy.yml",
         "stress:write": "npx artillery run stress-test/artillery/write-heavy.yml",
         "stress:mixed": "npx artillery run stress-test/artillery/mixed-70r-30w.yml",
-        "stress:quick": "npx artillery quick --count 20 --num 25 http://localhost:8000/api/campaigns"
+        "stress:quick": "npx artillery quick --count 20 --num 25 http://localhost:8000/api/campaigns",
+        "stress:stats": "npx artillery run stress-test/artillery/stats-progressive.yml"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

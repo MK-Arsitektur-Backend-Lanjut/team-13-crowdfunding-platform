@@ -24,6 +24,7 @@ config:
 
   http:
     timeout: 10
+    pool: 64
 
 scenarios:
   - name: Donation Stats

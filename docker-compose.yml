@@ -6,8 +6,9 @@ services:
     container_name: crowdfunding_app
     working_dir: /var/www/html
     environment:
-      APP_ENV: local
-      APP_DEBUG: "true"
+      APP_ENV: production
+      APP_DEBUG: "false"
+      LOG_LEVEL: error
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
@@ -19,6 +20,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_CACHE_DB: 1
+      REDIS_PERSISTENT: "true"
       SESSION_DRIVER: redis
       QUEUE_CONNECTION: redis
     volumes:
@@ -39,8 +41,9 @@ services:
     working_dir: /var/www/html
     command: php artisan queue:work --daemon
     environment:
-      APP_ENV: local
-      APP_DEBUG: "true"
+      APP_ENV: production
+      APP_DEBUG: "false"
+      LOG_LEVEL: error
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306
@@ -52,6 +55,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_CACHE_DB: 1
+      REDIS_PERSISTENT: "true"
       SESSION_DRIVER: redis
       QUEUE_CONNECTION: redis
     volumes:
@@ -67,6 +71,8 @@ services:
     restart: unless-stopped
     ports:
       - "8000:80"
+    command: >
+      /bin/sh -c "mkdir -p /var/cache/nginx/stats && nginx -g 'daemon off;'"
     volumes:
       - .:/var/www/html:ro
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
