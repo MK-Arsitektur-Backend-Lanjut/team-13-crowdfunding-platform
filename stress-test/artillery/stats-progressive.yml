@@ -1,0 +1,34 @@
+config:
+  target: "http://localhost:8000"
+
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm Up"
+
+    - duration: 60
+      arrivalRate: 20
+      name: "20 RPS"
+
+    - duration: 60
+      arrivalRate: 50
+      name: "50 RPS"
+
+    - duration: 60
+      arrivalRate: 100
+      name: "100 RPS"
+
+    - duration: 60
+      arrivalRate: 200
+      name: "200 RPS"
+
+  http:
+    timeout: 10
+
+scenarios:
+  - name: Donation Stats
+    flow:
+      - get:
+          url: "/api/donations/stats"
+          headers:
+            Accept: application/json
